@@ -1,7 +1,8 @@
 #! /usr/bin/env python3
 
-import pyglet, serial, glob, time
+import pyglet, serial, glob, time, arrow
 from pyglet.window import mouse
+from pathlib import Path
 
 pyglet.resource.path = ['img']
 pyglet.resource.reindex()
@@ -36,6 +37,17 @@ class PyPL_GUI():
 					if w.in_active_area(x, y):
 						w.activate()
 						break
+
+	def log(self, dt):
+		self.logfile = Path('logs/'+arrow.now().format('YYYY-MM-DD') + '.csv')
+		if self.logfile.exists():
+			fid = open(self.logfile, 'a')
+		else:
+			self.logfile.parent.mkdir(exist_ok  =True)
+			fid = open(self.logfile, 'w')
+			fid.write('Time,T1')
+		fid.write(arrow.now().format('\nHH:mm:ss') + f",{self.state['T1']:.2f}")
+		fid.close()
 	
 	def read(self, dt):
 
@@ -65,6 +77,7 @@ class PyPL_GUI():
 
 	def start(self):
 		pyglet.clock.schedule_interval(self.read, 0.05)
+		pyglet.clock.schedule_interval(self.log, 10)
 		pyglet.app.run()
 
 	
