@@ -25,7 +25,8 @@ class Valve():
 
 class PyPL():
 
-	def __init__(self, cycle = 0.01, separators = '\r;', status_cycle = 0.1):
+	def __init__(self, cycle = 0.01, separators = '\r;', status_cycle = 0.1, DEBUG = False):
+		self.DEBUG = DEBUG
 		self.serial = pyb.USB_VCP()
 		self.cycle = cycle
 		self.clock = 0
@@ -87,19 +88,20 @@ class PyPL():
 	def clearline(self):
 		self.send('clearline')	
 
-	def print_status(self):
+	def send_status(self):
 		self.send(
 			'status'
-			+ self.sep2 + 'T1=%s' % self.T1.T
-			+ self.sep2 + 'V1=%s' % self.V1.state()
-			+ self.sep2 + 'V2=%s' % self.V2.state()
-			+ self.sep2 + 'V3=%s' % self.V3.state()
+			+ self.sep2 + 'T1=f%.2f' % self.T1.T
+			+ self.sep2 + 'V1=b%s' % self.V1.state()
+			+ self.sep2 + 'V2=b%s' % self.V2.state()
+			+ self.sep2 + 'V3=b%s' % self.V3.state()
+# 			+ self.sep2 + 'DEBUG=s%s' % repr(self.rbuf)
 			)
 
 	async def status_loop(self):
 		while True:
 			await uasyncio.sleep(self.status_cycle)
-			self.print_status()
+			self.send_status()
 			
 
 	async def loop(self):
@@ -108,7 +110,7 @@ class PyPL():
 			await uasyncio.sleep(self.cycle)
 
 			# print debug info
-			if self.clock == 0:
+			if self.DEBUG and self.clock == 0:
 				print([self.rbuf], self.instructions)
 
 			# read instructions from serial
