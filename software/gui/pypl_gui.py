@@ -131,6 +131,59 @@ class Text_Widget(Widget):
 		self.label.draw()
 
 
+class Icon_Widget(Widget):
+	
+	def __init__(self,
+		pypl_instance, x, y, uid,
+		icon = 'needle.png',
+		avg = 1,
+		x_min = 0,
+		x_max = 1,
+		angle_min = 0,
+		angle_max = 0,
+		alpha_min = 1,
+		alpha_max = 1,
+		):
+
+		Widget.__init__(self)
+		self.uid = uid
+		self.avg = avg
+		self.parent = pypl_instance
+		self.state = [0]*self.avg
+		self.x = x + (self.parent.window.width) // 2
+		self.y = y + (self.parent.window.height) // 2
+		self.icon = pyglet.resource.image(icon)
+		self.angle_min, self.angle_max, self.alpha_min, self.alpha_max = angle_min, angle_max, alpha_min, alpha_max
+		self.A = (angle_max - angle_min) / (x_max - x_min)
+		self.B = angle_max - x_max * self.A
+		self.C = (alpha_max - alpha_min) / (x_max - x_min)
+		self.D = alpha_max - x_max * self.C
+
+		self.width = self.icon.width
+		self.height = self.icon.height
+		self.icon.anchor_x = self.width // 2
+		self.icon.anchor_y = self.height // 2
+		self.sprite = pyglet.sprite.Sprite(self.icon, self.x, self.y)
+		self.parent.population.append(self)
+		
+	def _angle(self, x):
+		return max(min(self.A * x + self.B, self.angle_max), self.angle_min)
+
+	def _alpha(self, x):
+		return max(min(self.C * x + self.D, self.alpha_max), self.alpha_min)
+	
+	def draw(self):
+		if self.avg > 1:
+			self.state = self.state[1:] + [self.parent.state[self.uid]]
+			self.sprite.rotation = self._angle(sum(self.state) / self.avg)
+			self.sprite.opacity = (self._alpha(sum(self.state) / self.avg))*255
+		else:
+			self.state = self.parent.state[self.uid]
+			self.sprite.rotation = self._angle(self.state)
+			self.sprite.opacity = self._alpha(self.state)*255
+		self.sprite.draw()
+
+
 class Toggle_Widget(Widget):
 	
 	def __init__(self,
@@ -186,6 +239,7 @@ if __name__ == '__main__':
 	
 	UI = PyPL_GUI()
 	Text_Widget(UI, 0, 0, 'T1', font_size = 18, fmtstr = 'T1 = {:.2f} °C')
+	Icon_Widget(UI, 0, 0, 'T1', x_min = 23, x_max = 25, angle_min = -45, angle_max = 45, alpha_min = 0, alpha_max = 1)
 	Toggle_Widget(UI, -200, -150, 'V1')
 	Text_Widget  (UI, -200, -280, 'V1', font_size = 14, fmtstr = 'V1 = {!s}')
 	Toggle_Widget(UI,    0, -150, 'V2')
