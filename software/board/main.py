@@ -70,6 +70,9 @@ class PyPL():
 		self.V3 = Valve(self.gpio[2])
 		
 		self.start_blink_dialog = 1
+		self.stop_blink_dialog = 0
+		self.confirm_stop_blink_dialog = 0
+		self.undo_stop_blink_dialog = 0
 
 	def send(self, txt):
 		self.serial.write(txt + self.sep1)
@@ -98,6 +101,9 @@ class PyPL():
 			+ self.sep2 + 'V2=b%s' % self.V2.state()
 			+ self.sep2 + 'V3=b%s' % self.V3.state()
 			+ self.sep2 + 'start_blink_dialog=b%s' % self.start_blink_dialog
+			+ self.sep2 + 'stop_blink_dialog=b%s' % self.stop_blink_dialog
+			+ self.sep2 + 'confirm_stop_blink_dialog=b%s' % self.confirm_stop_blink_dialog
+			+ self.sep2 + 'undo_stop_blink_dialog=b%s' % self.undo_stop_blink_dialog
 # 			+ self.sep2 + 'DEBUG=s%s' % repr(self.rbuf)
 			)
 
@@ -138,6 +144,16 @@ class PyPL():
 					self.__dict__[i[1]].stop()
 				elif i[0] == 'start_blink':
 					self.task_blink = uasyncio.create_task(self.blink())
+				elif i[0] == 'stop_blink':
+					self.confirm_stop_blink_dialog = 1
+					self.undo_stop_blink_dialog = 1
+				elif i[0] == 'confirm_stop_blink':
+					self.confirm_stop_blink_dialog = 0
+					self.undo_stop_blink_dialog = 0
+					self.task_blink.cancel()
+				elif i[0] == 'undo_stop_blink':
+					self.confirm_stop_blink_dialog = 0
+					self.undo_stop_blink_dialog = 0
 					
 	async def countdown(self, t, txt = ' remaining...', dt = 1):
 		clearline = False
@@ -158,6 +174,7 @@ class PyPL():
 	async def blink(self):
 		try:
 			self.start_blink_dialog = 0
+			self.stop_blink_dialog = 1
 			self.zero_clock()
 			self.newline()
 			self.timestamped_echo('Start blinking protocol')
@@ -173,11 +190,14 @@ class PyPL():
 			await uasyncio.sleep(1)
 			self.timestamped_echo('End of blinking protocol')
 			self.newline()
+			self.stop_blink_dialog = 0
 			self.start_blink_dialog = 1
 		except uasyncio.CancelledError:
 			self.newline()
 			self.timestamped_echo('!!! Blinking protocol cancelled')
 			self.newline()
+			self.stop_blink_dialog = 0
+			self.start_blink_dialog = 1
 		
 
 if __name__ == '__main__':
