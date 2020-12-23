@@ -1,8 +1,9 @@
 #! /usr/bin/env python3
 
-import pyglet, serial, glob, time, arrow
+import pyglet, serial, glob, time, arrow, sys
 from pyglet.window import mouse
 from pathlib import Path
+from colorama import Fore, Style
 
 pyglet.resource.path = ['img']
 pyglet.resource.reindex()
@@ -22,6 +23,7 @@ class PyPL_GUI():
 		self.instructions = []
 		self.population = []
 		self.state = {}
+		self.start_of_timer = arrow.utcnow()
 
 		@self.window.event
 		def on_draw():
@@ -70,7 +72,20 @@ class PyPL_GUI():
 						self.state[k] = float(v[1:])
 					elif v[0] == 's':
 						self.state[k] = v[1:]
-				print(self.state, end = '\r')
+# 				print(self.state, end = '\r')
+			elif i[0] == 'echo':
+				for j in i[1:]:
+					print(j)
+			elif i[0] == 'newline':
+				print('')
+			elif i[0] == 'clearline':
+				sys.stdout.write('\033[F')
+			elif i[0] == 'timestamp':
+				t = arrow.utcnow()
+				dt = (t - self.start_of_timer).total_seconds()
+				print(f'{t.format("YYYY-MM-DD HH:mm:ss")} {Fore.GREEN}[ {dt//60:02.0f}:{dt % 60:02.0f} ]{Style.RESET_ALL} ', end = '')
+			elif i[0] == 'zero_clock':
+				self.start_of_timer = arrow.utcnow()
 
 	def send(self, txt):
 		self.board.write(txt.encode())
@@ -247,10 +262,48 @@ class Toggle_Widget(Widget):
 	def activate(self):
 		self.parent.send(f'toggle;{self.uid}\r')
 	
+
+class Dialog_Widget(Widget):
+	
+	def __init__(self, pypl_instance, x, y, uid, icon, instruction):
+
+		Widget.__init__(self)
+
+		self.visible = False
+		self.uid = uid
+		self.parent = pypl_instance
+		self.instruction = instruction
+		self.x = x + (self.parent.window.width) // 2
+		self.y = y + (self.parent.window.height) // 2
+
+		self.icon = pyglet.resource.image(icon)
+
+		self.width = self.icon.width
+		self.height = self.icon.height
+
+		self.active_area_type = 'rectangle'
+		self.active_area_rectangle = (-self.width//2, self.width//2, -self.height//2, self.height//2)
+
+		self.sprite = pyglet.sprite.Sprite(
+			self.icon,
+			x + (self.parent.window.width - self.width) // 2,
+			y + (self.parent.window.height - self.height) // 2,
+			)
+
+		self.parent.population.append(self)
+	
+	def draw(self):
+		self.visible = self.parent.state[self.uid]
+		if self.visible:
+			self.sprite.draw()
+
+	def activate(self):
+		self.parent.send(f'{self.instruction}\r')
 	
 if __name__ == '__main__':
 	
 	UI = PyPL_GUI()
+	Dialog_Widget(UI, 0, 200, 'start_blink_dialog', 'button_start.png', instruction = 'start_blink')
 	Text_Widget(UI, 0, 0, 'T1', font_size = 18, fmtstr = 'T1 = {:.2f} °C')
 	Icon_Widget(UI, 0, 0, 'T1', x_min = 23, x_max = 25, angle_min = -45, angle_max = 45, alpha_min = 0, alpha_max = 1)
 	Toggle_Widget(UI, -200, -150, 'V1')

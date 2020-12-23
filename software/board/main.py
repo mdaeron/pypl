@@ -68,12 +68,14 @@ class PyPL():
 		self.V1 = Valve(self.gpio[0])
 		self.V2 = Valve(self.gpio[1])
 		self.V3 = Valve(self.gpio[2])
+		
+		self.start_blink_dialog = 1
 
 	def send(self, txt):
 		self.serial.write(txt + self.sep1)
 
 	def echo(self, txt):
-		self.send('echo,' + txt)
+		self.send('echo' + self.sep2 + txt)
 
 	def zero_clock(self):
 		self.send('zero_clock')
@@ -95,6 +97,7 @@ class PyPL():
 			+ self.sep2 + 'V1=b%s' % self.V1.state()
 			+ self.sep2 + 'V2=b%s' % self.V2.state()
 			+ self.sep2 + 'V3=b%s' % self.V3.state()
+			+ self.sep2 + 'start_blink_dialog=b%s' % self.start_blink_dialog
 # 			+ self.sep2 + 'DEBUG=s%s' % repr(self.rbuf)
 			)
 
@@ -154,6 +157,7 @@ class PyPL():
 
 	async def blink(self):
 		try:
+			self.start_blink_dialog = 0
 			self.zero_clock()
 			self.newline()
 			self.timestamped_echo('Start blinking protocol')
@@ -169,6 +173,7 @@ class PyPL():
 			await uasyncio.sleep(1)
 			self.timestamped_echo('End of blinking protocol')
 			self.newline()
+			self.start_blink_dialog = 1
 		except uasyncio.CancelledError:
 			self.newline()
 			self.timestamped_echo('!!! Blinking protocol cancelled')
