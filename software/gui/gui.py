@@ -94,6 +94,12 @@ class PyPL_GUI():
 		pyglet.clock.schedule_interval(self.read, 0.05)
 		pyglet.clock.schedule_interval(self.log, 10)
 		pyglet.app.run()
+	
+	def start_log(self, uid):
+		print(f'start log {uid}')
+
+	def stop_log(self, uid):
+		print(f'stop log {uid}')
 
 	
 class Widget():
@@ -263,6 +269,60 @@ class Toggle_Widget(Widget):
 		self.parent.send(f'toggle;{self.uid}\r')
 	
 
+class Logger_Widget(Widget):
+	
+	def __init__(self,
+		pypl_instance, x, y, uid,
+		on_icon = 'logger_stop.png',
+		off_icon = 'logger_start.png',
+		):
+
+		Widget.__init__(self)
+
+		self.state = False
+		self.uid = uid
+		self.parent = pypl_instance
+
+		self.x = x + (self.parent.window.width) // 2
+		self.y = y + (self.parent.window.height) // 2
+
+		self.on_icon = pyglet.resource.image(on_icon)
+		self.off_icon = pyglet.resource.image(off_icon)
+
+		self.width = self.on_icon.width
+		self.height = self.on_icon.height
+
+		self.active_area_type = 'circle'
+		self.active_area_radius = self.width // 2
+
+		self.on_sprite = pyglet.sprite.Sprite(
+			self.on_icon,
+			x + (self.parent.window.width - self.width) // 2,
+			y + (self.parent.window.height - self.height) // 2,
+			)
+		self.off_sprite = pyglet.sprite.Sprite(
+			self.off_icon,
+			x + (self.parent.window.width - self.width) // 2,
+			y + (self.parent.window.height - self.height) // 2,
+			)
+
+		self.parent.population.append(self)
+	
+	def draw(self):
+		if self.visible:
+			if self.state:
+				self.on_sprite.draw()
+			else:
+				self.off_sprite.draw()
+
+	def activate(self):
+		self.state = not self.state
+		if self.state:
+			self.parent.start_log(self.uid)
+		else:
+			self.parent.stop_log(self.uid)
+	
+
 class Dialog_Widget(Widget):
 	
 	def __init__(self, pypl_instance, x, y, uid, icon, instruction, alpha = 1):
@@ -318,5 +378,6 @@ if __name__ == '__main__':
 	Dialog_Widget(UI, 0,   50, 'confirm_stop_blink_dialog', 'button_abort.png', instruction = 'confirm_stop_blink')
 	Dialog_Widget(UI, 0,  -50, 'undo_stop_blink_dialog', 'button_undo.png', instruction = 'undo_stop_blink')
 
+	Logger_Widget(UI,  0, 100, 'T1')
 
 	UI.start()
