@@ -12,6 +12,40 @@ class MAX31855:
 		self.VTOTAL = None
 		self.TCOR = None
 
+		# https://srdata.nist.gov/its90/type_k/kcoefficients_inverse.html
+		self.DCOEF1 = (
+			0.0000000e00,
+			2.5173462e01,
+			-1.1662878e00,
+			-1.0833638e00,
+			-8.9773540e-01,
+			-3.7342377e-01,
+			-8.6632643e-02,
+			-1.0450598e-02,
+			-5.1920577e-04,
+			)
+		self.DCOEF2 = (
+			0.000000e00,
+			2.508355e01,
+			7.860106e-02,
+			-2.503131e-01,
+			8.315270e-02,
+			-1.228034e-02,
+			9.804036e-04,
+			-4.413030e-05,
+			1.057734e-06,
+			-1.052755e-08,
+			)
+		self.DCOEF3 = (
+			-1.318058e02,
+			4.830222e01,
+			-1.646031e00,
+			5.464731e-02,
+			-9.650715e-04,
+			8.802193e-06,
+			-3.110810e-08,
+			)
+
 	def _read(self, internal = False):
 		self.cs.value(0)
 		try:
@@ -80,52 +114,25 @@ class MAX31855:
 				+ -0.198892668780e-19 * self.TAMB ** 9
 				+ -0.163226974860e-22 * self.TAMB ** 10
 			)
+
 		# total thermoelectric voltage
 		self.VTOTAL = self.VOUT + self.VREF
 
-		# determine coefficients
-		# https://srdata.nist.gov/its90/type_k/kcoefficients_inverse.html
+		# compute temperature
+		self.TCOR = 0.
 		if -5.891 <= self.VTOTAL <= 0:
-			DCOEF = (
-				0.0000000e00,
-				2.5173462e01,
-				-1.1662878e00,
-				-1.0833638e00,
-				-8.9773540e-01,
-				-3.7342377e-01,
-				-8.6632643e-02,
-				-1.0450598e-02,
-				-5.1920577e-04,
-			)
+			for n, c in enumerate(self.DCOEF1):
+				self.TCOR += c * self.VTOTAL ** n
+			return self.TCOR
 		elif 0 < self.VTOTAL <= 20.644:
-			DCOEF = (
-				0.000000e00,
-				2.508355e01,
-				7.860106e-02,
-				-2.503131e-01,
-				8.315270e-02,
-				-1.228034e-02,
-				9.804036e-04,
-				-4.413030e-05,
-				1.057734e-06,
-				-1.052755e-08,
-			)
+			for n, c in enumerate(self.DCOEF2):
+				self.TCOR += c * self.VTOTAL ** n
+			return self.TCOR
 		elif 20.644 < self.VTOTAL <= 54.886:
-			DCOEF = (
-				-1.318058e02,
-				4.830222e01,
-				-1.646031e00,
-				5.464731e-02,
-				-9.650715e-04,
-				8.802193e-06,
-				-3.110810e-08,
-			)
+			for n, c in enumerate(self.DCOEF3):
+				self.TCOR += c * self.VTOTAL ** n
+			return self.TCOR
 		else:
 			raise RuntimeError(
 				'Total thermoelectric voltage out of range: %.2f' % self.VTOTAL
 			)
-		# compute temperature
-		self.TCOR = 0.
-		for n, c in enumerate(DCOEF):
-			self.TCOR += c * self.VTOTAL ** n
-		return self.TCOR
