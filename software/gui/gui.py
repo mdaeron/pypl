@@ -47,8 +47,8 @@ class PyPL_GUI():
 		else:
 			self.logfile.parent.mkdir(exist_ok  =True)
 			fid = open(self.logfile, 'w')
-			fid.write('Time,T1')
-		fid.write(arrow.now().format('\nHH:mm:ss') + f",{self.state['T1']:.2f}")
+			fid.write('Time,T1,T2')
+		fid.write(arrow.now().format('\nHH:mm:ss') + f",{self.state['T1']:.2f},{self.state['T2']:.2f}")
 		fid.close()
 	
 	def read(self, dt):
@@ -92,7 +92,7 @@ class PyPL_GUI():
 
 	def start(self):
 		pyglet.clock.schedule_interval(self.read, 0.05)
-		pyglet.clock.schedule_interval(self.log, 10)
+		pyglet.clock.schedule_interval(self.log, 1)
 		pyglet.app.run()
 	
 	def start_log(self, uid):
@@ -366,12 +366,12 @@ if __name__ == '__main__':
 	UI = PyPL_GUI()
 	Text_Widget(UI, 0, 220, 'T1', font_size = 18, fmtstr = 'T1 = {:.2f} °C')
 	Icon_Widget(UI, 0, 100, 'T1', x_min = 19, x_max = 23, angle_min = -45, angle_max = 45)
-	Toggle_Widget(UI, -200, -150, 'V1')
-	Text_Widget  (UI, -200,  -60, 'V1', font_size = 14, fmtstr = 'V1 = {!s}')
-	Toggle_Widget(UI,    0, -150, 'V2')
-	Text_Widget  (UI,    0,  -60, 'V2', font_size = 14, fmtstr = 'V2 = {!s}')
-	Toggle_Widget(UI,  200, -150, 'V3')
-	Text_Widget  (UI,  200,  -60, 'V3', font_size = 14, fmtstr = 'V3 = {!s}')
+# 	Toggle_Widget(UI, -200, -150, 'V1')
+# 	Text_Widget  (UI, -200,  -60, 'V1', font_size = 14, fmtstr = 'V1 = {!s}')
+# 	Toggle_Widget(UI,    0, -150, 'V2')
+# 	Text_Widget  (UI,    0,  -60, 'V2', font_size = 14, fmtstr = 'V2 = {!s}')
+# 	Toggle_Widget(UI,  200, -150, 'V3')
+# 	Text_Widget  (UI,  200,  -60, 'V3', font_size = 14, fmtstr = 'V3 = {!s}')
 
 	Dialog_Widget(UI, 0, -300, 'start_blink_dialog', 'button_start.png', instruction = 'start_blink')
 	Dialog_Widget(UI, 0, -300, 'stop_blink_dialog', 'button_stop.png', instruction = 'stop_blink')

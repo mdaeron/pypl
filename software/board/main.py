@@ -3,6 +3,7 @@ print('-- Booting uPyPL board --')
 import pyb, uasyncio, utime, machine, math
 from MKSGauge import MKSGauge
 from max31865 import PT1000
+from max31855 import MAX31855
 from mcp23017 import MCP23017
 
 class Valve():
@@ -36,21 +37,25 @@ class PyPL():
 		self.status_cycle = status_cycle
 		self.task_blink = None
 
-		self.i2c = machine.I2C(2)
-		self.gpio = MCP23017(self.i2c, 0x20)
-		self.gpio.mode = 0x0000 # configure all pins as outputs
-		self.gpio.gpio = 0x0000 # set all pins to low
+# 		self.i2c = machine.I2C(2)
+# 		self.gpio = MCP23017(self.i2c, 0x20)
+# 		self.gpio.mode = 0x0000 # configure all pins as outputs
+# 		self.gpio.gpio = 0x0000 # set all pins to low
 
-		self.pt1000_spi = machine.SoftSPI(
-			baudrate = 100000,
-			polarity = 0,
-			phase = 1,
-			bits = 8,
-			firstbit = machine.SPI.MSB,
-			sck = machine.Pin('Y6'),
-			mosi = machine.Pin('Y7'),
-			miso = machine.Pin('Y8'),
-			)
+# 		self.pt1000_spi = machine.SoftSPI(
+# 			baudrate = 100000,
+# 			polarity = 0,
+# 			phase = 1,
+# 			bits = 8,
+# 			firstbit = machine.SPI.MSB,
+# 			sck = machine.Pin('Y6'),
+# 			mosi = machine.Pin('Y7'),
+# 			miso = machine.Pin('Y8'),
+# 			)
+
+		self.tc_spi = pyb.SPI(2, mode = pyb.SPI.MASTER, baudrate = 10**7, phase = 1)
+		self.T1 = MAX31855(self.tc_spi, pyb.Pin('X11', pyb.Pin.OUT))
+		self.T2 = MAX31855(self.tc_spi, pyb.Pin('X12', pyb.Pin.OUT))
 
 # 		self.pt1000_spi = pyb.SPI(2,
 # 			mode = pyb.SPI.MASTER,
@@ -60,14 +65,14 @@ class PyPL():
 # 			bits = 8,
 # 			firstbit = pyb.SPI.MSB)
 
-		self.T1 = PT1000('X5', self.pt1000_spi)
+# 		self.T1 = PT1000('X5', self.pt1000_spi)
 # 		self.T2 = PT1000('X6', self.pt1000_spi)
 # 		self.T3 = PT1000('X11', self.pt1000_spi)
 # 		self.T4 = PT1000('X12', self.pt1000_spi)
 
-		self.V1 = Valve(self.gpio[0])
-		self.V2 = Valve(self.gpio[1])
-		self.V3 = Valve(self.gpio[2])
+# 		self.V1 = Valve(self.gpio[0])
+# 		self.V2 = Valve(self.gpio[1])
+# 		self.V3 = Valve(self.gpio[2])
 		
 		self.start_blink_dialog = 1
 		self.stop_blink_dialog = 0
@@ -97,9 +102,10 @@ class PyPL():
 		self.send(
 			'status'
 			+ self.sep2 + 'T1=f%.2f' % self.T1.T
-			+ self.sep2 + 'V1=b%s' % self.V1.state()
-			+ self.sep2 + 'V2=b%s' % self.V2.state()
-			+ self.sep2 + 'V3=b%s' % self.V3.state()
+			+ self.sep2 + 'T2=f%.2f' % (self.T2.T)
+# 			+ self.sep2 + 'V1=b%s' % self.V1.state()
+# 			+ self.sep2 + 'V2=b%s' % self.V2.state()
+# 			+ self.sep2 + 'V3=b%s' % self.V3.state()
 			+ self.sep2 + 'start_blink_dialog=b%s' % self.start_blink_dialog
 			+ self.sep2 + 'stop_blink_dialog=b%s' % self.stop_blink_dialog
 			+ self.sep2 + 'confirm_stop_blink_dialog=b%s' % self.confirm_stop_blink_dialog
