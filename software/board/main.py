@@ -168,7 +168,7 @@ class PyPL():
 					self.confirm_stop_blink_dialog = 0
 					self.undo_stop_blink_dialog = 0
 				elif i[0] == 'set_rtc':
-					self.rtc.datetime(tuple(i[1:]))
+					self.rtc.datetime(tuple([int(e) for e in i[1:]]))
 					
 	async def countdown(self, t, txt = ' remaining...', dt = 1):
 		clearline = False

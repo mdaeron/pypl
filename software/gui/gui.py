@@ -90,7 +90,12 @@ class PyPL_GUI():
 	def send(self, txt):
 		self.board.write(txt.encode())
 
+	def set_rtc(self):
+		now = arrow.now()
+		self.send(f'set_rtc;%s;%d;%s' % (now.format('YYYY;MM;DD'), (now.weekday() - 1) % 7 + 1, now.format('hh;mm;ss;255\r')))
+
 	def start(self):
+		self.set_rtc()
 		pyglet.clock.schedule_interval(self.read, 0.05)
 		pyglet.clock.schedule_interval(self.log, 1)
 		pyglet.app.run()
