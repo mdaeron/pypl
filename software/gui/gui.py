@@ -48,7 +48,7 @@ class PyPL_GUI():
 			self.logfile.parent.mkdir(exist_ok  =True)
 			fid = open(self.logfile, 'w')
 			fid.write('Time,T1,T2')
-		fid.write(arrow.now().format('\nHH:mm:ss') + f",{self.state['T1']:.2f},{self.state['T2']:.2f}")
+		fid.write(f"\n{self.state['NOW']},{self.state['T1']:.2f},{self.state['T2']:.2f}")
 		fid.close()
 	
 	def read(self, dt):
@@ -72,7 +72,7 @@ class PyPL_GUI():
 						self.state[k] = float(v[1:])
 					elif v[0] == 's':
 						self.state[k] = v[1:]
-# 				print(self.state, end = '\r')
+				print(self.state, end = '\r')
 			elif i[0] == 'echo':
 				for j in i[1:]:
 					print(j)

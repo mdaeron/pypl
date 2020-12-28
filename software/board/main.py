@@ -36,6 +36,7 @@ class PyPL():
 		self.instructions = []
 		self.status_cycle = status_cycle
 		self.task_blink = None
+		self.rtc = pyb.RTC()
 
 # 		self.i2c = machine.I2C(2)
 # 		self.gpio = MCP23017(self.i2c, 0x20)
@@ -98,9 +99,15 @@ class PyPL():
 	def clearline(self):
 		self.send('clearline')	
 
+	def datetime(self):
+		now = self.rtc.datetime()
+		s = now[6] + (255-now[7])/255
+		return ('NOW=s%04d-%02d-%02d' % now[:3]) + (' %02d:%02d:' % now[4:6]) + ('%04.1f' % s)
+
 	def send_status(self):
 		self.send(
 			'status'
+			+ self.sep2 + self.datetime()
 			+ self.sep2 + 'T1=f%.2f' % self.T1.T
 			+ self.sep2 + 'T2=f%.2f' % (self.T2.T)
 # 			+ self.sep2 + 'V1=b%s' % self.V1.state()
@@ -160,6 +167,8 @@ class PyPL():
 				elif i[0] == 'undo_stop_blink':
 					self.confirm_stop_blink_dialog = 0
 					self.undo_stop_blink_dialog = 0
+				elif i[0] == 'set_rtc':
+					self.rtc.datetime(tuple(i[1:]))
 					
 	async def countdown(self, t, txt = ' remaining...', dt = 1):
 		clearline = False
