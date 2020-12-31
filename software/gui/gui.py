@@ -23,7 +23,7 @@ class PyPL_GUI():
 		self.instructions = []
 		self.population = []
 		self.state = {}
-		self.start_of_timer = arrow.utcnow()
+		self.start_of_timer = arrow.now()
 
 		@self.window.event
 		def on_draw():
@@ -40,15 +40,20 @@ class PyPL_GUI():
 						w.activate()
 						break
 
-	def log(self, dt):
+	def log(self, dt, echo = None):
 		self.logfile = Path('logs/'+arrow.now().format('YYYY-MM-DD') + '.csv')
 		if self.logfile.exists():
 			fid = open(self.logfile, 'a')
 		else:
 			self.logfile.parent.mkdir(exist_ok  =True)
 			fid = open(self.logfile, 'w')
-			fid.write('Time,T1,T2')
-		fid.write(f"\n{self.state['NOW']},{self.state['T1']:.2f},{self.state['T2']:.2f}")
+			fid.write('Time,X,Y,Z')
+# 			fid.write('Time,T1,T2')
+		if echo is None:
+			fid.write(f"\n{self.state['NOW']},{self.state['x']:.2f},{self.state['y']:.2f},{self.state['z']:.2f}")
+# 			fid.write(f"\n{self.state['NOW']},{self.state['T1']:.2f},{self.state['T2']:.2f}")
+		else:
+			fid.write(f"\n# {self.state['NOW']},{echo}")
 		fid.close()
 	
 	def read(self, dt):
@@ -76,23 +81,27 @@ class PyPL_GUI():
 			elif i[0] == 'echo':
 				for j in i[1:]:
 					print(j)
+			elif i[0] == 'echolog':
+				for j in i[1:]:
+					print(j)
+					self.log(0, echo = j)
 			elif i[0] == 'newline':
 				print('')
 			elif i[0] == 'clearline':
 				sys.stdout.write('\033[F')
 			elif i[0] == 'timestamp':
-				t = arrow.utcnow()
+				t = arrow.now()
 				dt = (t - self.start_of_timer).total_seconds()
 				print(f'{t.format("YYYY-MM-DD HH:mm:ss")} {Fore.GREEN}[ {dt//60:02.0f}:{dt % 60:02.0f} ]{Style.RESET_ALL} ', end = '')
 			elif i[0] == 'zero_clock':
-				self.start_of_timer = arrow.utcnow()
+				self.start_of_timer = arrow.now()
 
 	def send(self, txt):
 		self.board.write(txt.encode())
 
 	def set_rtc(self):
 		now = arrow.now()
-		self.send(f'set_rtc;%s;%d;%s' % (now.format('YYYY;MM;DD'), (now.weekday() - 1) % 7 + 1, now.format('hh;mm;ss;255\r')))
+		self.send(f'set_rtc;%s;%d;%s' % (now.format('YYYY;MM;DD'), (now.weekday() - 1) % 7 + 1, now.format('HH;mm;ss;255\r')))
 
 	def start(self):
 		self.set_rtc()
@@ -369,8 +378,14 @@ class Dialog_Widget(Widget):
 if __name__ == '__main__':
 	
 	UI = PyPL_GUI()
-	Text_Widget(UI, 0, 220, 'T1', font_size = 18, fmtstr = 'T1 = {:.2f} °C')
-	Icon_Widget(UI, 0, 100, 'T1', x_min = 19, x_max = 23, angle_min = -45, angle_max = 45)
+	Text_Widget(UI, -280, 220, 'x', font_size = 18, fmtstr = 'x = {:.2f}')
+	Icon_Widget(UI, -280, 100, 'x', x_min = -1, x_max = 1, angle_min = -45, angle_max = 45)
+	Text_Widget(UI, 0, 220, 'y', font_size = 18, fmtstr = 'y = {:.2f}')
+	Icon_Widget(UI, 0, 100, 'y', x_min = -1, x_max = 1, angle_min = -45, angle_max = 45)
+	Text_Widget(UI, 280, 220, 'z', font_size = 18, fmtstr = 'z = {:.2f}')
+	Icon_Widget(UI, 280, 100, 'z', x_min = -1, x_max = 1, angle_min = -45, angle_max = 45)
+# 	Text_Widget(UI, 0, 220, 'T1', font_size = 18, fmtstr = 'T1 = {:.2f} °C')
+# 	Icon_Widget(UI, 0, 100, 'T1', x_min = 19, x_max = 23, angle_min = -45, angle_max = 45)
 # 	Toggle_Widget(UI, -200, -150, 'V1')
 # 	Text_Widget  (UI, -200,  -60, 'V1', font_size = 14, fmtstr = 'V1 = {!s}')
 # 	Toggle_Widget(UI,    0, -150, 'V2')
@@ -383,6 +398,6 @@ if __name__ == '__main__':
 	Dialog_Widget(UI, 0,   50, 'confirm_stop_blink_dialog', 'button_abort.png', instruction = 'confirm_stop_blink')
 	Dialog_Widget(UI, 0,  -50, 'undo_stop_blink_dialog', 'button_undo.png', instruction = 'undo_stop_blink')
 
-	Logger_Widget(UI,  0, 100, 'T1')
+# 	Logger_Widget(UI,  0, 100, 'T1')
 
 	UI.start()

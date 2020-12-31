@@ -37,6 +37,7 @@ class PyPL():
 		self.status_cycle = status_cycle
 		self.task_blink = None
 		self.rtc = pyb.RTC()
+		self.accel = pyb.Accel()
 
 # 		self.i2c = machine.I2C(2)
 # 		self.gpio = MCP23017(self.i2c, 0x20)
@@ -86,12 +87,15 @@ class PyPL():
 	def echo(self, txt):
 		self.send('echo' + self.sep2 + txt)
 
+	def echolog(self, txt):
+		self.send('echolog' + self.sep2 + txt)
+
 	def zero_clock(self):
 		self.send('zero_clock')
 
 	def timestamped_echo(self, txt):
 		self.send('timestamp')
-		self.echo(txt)
+		self.echolog(txt)
 	
 	def newline(self):
 		self.send('newline')
@@ -102,14 +106,17 @@ class PyPL():
 	def datetime(self):
 		now = self.rtc.datetime()
 		s = now[6] + (255-now[7])/255
-		return ('NOW=s%04d-%02d-%02d' % now[:3]) + (' %02d:%02d:' % now[4:6]) + ('%04.1f' % s)
+		return ('NOW=s%04d-%02d-%02d' % now[:3]) + (' %02d:%02d:' % now[4:6]) + ('%06.3f' % s)
 
 	def send_status(self):
 		self.send(
 			'status'
 			+ self.sep2 + self.datetime()
-			+ self.sep2 + 'T1=f%.2f' % self.T1.T
-			+ self.sep2 + 'T2=f%.2f' % (self.T2.T)
+			+ self.sep2 + 'x=f%.2f' % (self.accel.x() / 32)
+			+ self.sep2 + 'y=f%.2f' % (self.accel.y() / 32)
+			+ self.sep2 + 'z=f%.2f' % (self.accel.z() / 32)
+# 			+ self.sep2 + 'T1=f%.2f' % self.T1.T
+# 			+ self.sep2 + 'T2=f%.2f' % (self.T2.T)
 # 			+ self.sep2 + 'V1=b%s' % self.V1.state()
 # 			+ self.sep2 + 'V2=b%s' % self.V2.state()
 # 			+ self.sep2 + 'V3=b%s' % self.V3.state()
@@ -193,14 +200,14 @@ class PyPL():
 			self.zero_clock()
 			self.newline()
 			self.timestamped_echo('Start blinking protocol')
-			self.V1.close()
-			self.V2.close()
-			self.V3.close()
+# 			self.V1.close()
+# 			self.V2.close()
+# 			self.V3.close()
 			self.timestamped_echo('Valves closed')
 			await self.countdown(5)
-			self.V1.open()
-			self.V2.open()
-			self.V3.open()
+# 			self.V1.open()
+# 			self.V2.open()
+# 			self.V3.open()
 			self.timestamped_echo('Valves open')
 			await uasyncio.sleep(1)
 			self.timestamped_echo('End of blinking protocol')

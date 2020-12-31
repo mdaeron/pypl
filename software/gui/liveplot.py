@@ -1,7 +1,9 @@
 #! /usr/bin/env python3
 
+from datetime import datetime
 from numpy import sin, cos, arange, array, inf
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import matplotlib.animation as animation
 from matplotlib.widgets import CheckButtons
 import sys
@@ -20,6 +22,12 @@ class LivePlot():
 		self.ax2 = self.fig.add_axes((.1,.1,.7,.35), sharex = self.ax1)
 		self.ax1.tick_params(axis = 'both', which = 'both',length = 4, color = '#00000040')
 		self.ax2.tick_params(axis = 'both', which = 'both',length = 4, color = '#00000040')
+
+		self.xlocator = mdates.AutoDateLocator(minticks=3, maxticks=7)
+		self.xformatter = mdates.ConciseDateFormatter(self.xlocator)
+		self.ax1.xaxis.set_major_locator(self.xlocator)
+		self.ax1.xaxis.set_major_formatter(self.xformatter)
+
 		self.fig.canvas.mpl_connect('key_press_event', self.press)
 		self.readfile()
 		for f in self.data:
@@ -39,13 +47,13 @@ class LivePlot():
 
 	def readfile(self):
 		with open(self.file) as fid:
-			data = [l.strip().split(',') for l in fid.readlines()]
+			data = [l.strip().split(',') for l in fid.readlines() if not l.startswith('# ')]
 			self.fields = data[0]
 			data = [{k:v if k == self.fields[0] else float(v) for k,v in zip(self.fields, l)} for l in data[1:]]
 			if self.data is None:
 				self.data = {
 					f: dict(
-						x = array(range(len(data))),
+						x = [datetime.strptime(r['Time'], '%Y-%m-%d %H:%M:%S.%f') for r in data],
 						y = array([r[f] for r in data]),
 						color = c,
 						yscale = 'log' if f[0] == 'P' else 'lin',
@@ -56,8 +64,9 @@ class LivePlot():
 					for c,f in zip(self.colors, self.fields[1:])
 					}
 			else:
+				x = [datetime.strptime(r['Time'], '%Y-%m-%d %H:%M:%S.%f') for r in data]
 				for f in self.fields[1:]:
-					self.data[f]['x'] = array(range(len(data)))
+					self.data[f]['x'] = x
 					self.data[f]['y'] = array([r[f] for r in data])
 
 	def fnx(self, cblabel):
@@ -128,6 +137,8 @@ class LivePlot():
 			if self.resize['ymax']:
 				self.ax2.set_ylim(None, max([d['line'].get_ydata().max() for d in self.data.values() if d['visible'] and d['yscale'] == 'log']))
 
+		self.ax1.xaxis.set_major_locator(self.xlocator)
+		self.ax1.xaxis.set_major_formatter(self.xformatter)
 		plt.draw()
 
 	def start(self):
