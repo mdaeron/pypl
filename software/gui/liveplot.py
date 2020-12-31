@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 from datetime import datetime
-from numpy import sin, cos, arange, array, inf
+from numpy import sin, cos, arange, array, inf, logspace, linspace, log10
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.animation as animation
@@ -14,6 +14,8 @@ class LivePlot():
 
 	def __init__(self, file):
 		self.data = None
+		self.notes = None
+		self.notecolor = [.8,.8,.8]
 		self.fields = []
 		self.file = file
 		self.colors = 'rbgmkcy'
@@ -46,28 +48,43 @@ class LivePlot():
 
 
 	def readfile(self):
+		notes, data = [], []
 		with open(self.file) as fid:
-			data = [l.strip().split(',') for l in fid.readlines() if not l.startswith('# ')]
-			self.fields = data[0]
-			data = [{k:v if k == self.fields[0] else float(v) for k,v in zip(self.fields, l)} for l in data[1:]]
-			if self.data is None:
-				self.data = {
-					f: dict(
-						x = [datetime.strptime(r['Time'], '%Y-%m-%d %H:%M:%S.%f') for r in data],
-						y = array([r[f] for r in data]),
-						color = c,
-						yscale = 'log' if f[0] == 'P' else 'lin',
-						ax = self.ax2 if f[0] == 'P' else self.ax1,
-						visible = True,
-						line = None,
-						)
-					for c,f in zip(self.colors, self.fields[1:])
-					}
+			for l in fid.readlines():
+				if l.startswith('# '):
+					notes.append(l[2:].strip().split(',', 1))
+				else:
+					data.append(l.strip().split(','))
+
+		notes = [[datetime.strptime(r[0], '%Y-%m-%d %H:%M:%S.%f'), r[1]] for r in notes]
+		self.notes = [notes[0]]
+		for n in notes[1:]:
+			if n[0] == self.notes[-1][0]:
+				self.notes[-1][1] += f'\n{n[1]}'
 			else:
-				x = [datetime.strptime(r['Time'], '%Y-%m-%d %H:%M:%S.%f') for r in data]
-				for f in self.fields[1:]:
-					self.data[f]['x'] = x
-					self.data[f]['y'] = array([r[f] for r in data])
+				self.notes.append(n)
+				self.notes[-1][1] = f' {n[1]}'
+
+		self.fields = data[0]
+		data = [{k:v if k == self.fields[0] else float(v) for k,v in zip(self.fields, l)} for l in data[1:]]
+		if self.data is None:
+			self.data = {
+				f: dict(
+					x = [datetime.strptime(r['Time'], '%Y-%m-%d %H:%M:%S.%f') for r in data],
+					y = array([r[f] for r in data]),
+					color = c,
+					yscale = 'log' if f[0] == 'P' else 'lin',
+					ax = self.ax2 if f[0] == 'P' else self.ax1,
+					visible = True,
+					line = None,
+					)
+				for c,f in zip(self.colors, self.fields[1:])
+				}
+		else:
+			x = [datetime.strptime(r['Time'], '%Y-%m-%d %H:%M:%S.%f') for r in data]
+			for f in self.fields[1:]:
+				self.data[f]['x'] = x
+				self.data[f]['y'] = array([r[f] for r in data])
 
 	def fnx(self, cblabel):
 		self.resize[cblabel] = not self.resize[cblabel]
@@ -100,23 +117,17 @@ class LivePlot():
 
 		self.ax1.lines = []
 		self.ax2.lines = []
+		self.ax1.texts = []
+		self.ax2.texts = []
 
-		for f in self.data:
+		for k,f in enumerate(self.data):
 			d = self.data[f]
-			d['line'].set_data(d['x'], d['y'])
 			if d['yscale'] == 'lin':
 				d['ax'] = self.ax1
-				d['line'] = self.ax1.plot(d['x'], d['y'], '-', label = f, visible = d['visible'], color = d['color'])[0]
+				d['line'] = self.ax1.plot(d['x'], d['y'], '-', label = f'[{k+1}] {f}', visible = d['visible'], color = d['color'])[0]
 			elif d['yscale'] == 'log':
 				d['ax'] = self.ax2
-				d['line'] = self.ax2.semilogy(d['x'], d['y'], '-', label = f, visible = d['visible'], color = d['color'])[0]
-
-		if lin_exist:
-			self.ax1.legend(loc = 'upper left', bbox_to_anchor = (1.05, 1))
-			self.ax1.grid(alpha = .25)
-		if log_exist:
-			self.ax2.legend(loc = 'upper left', bbox_to_anchor = (1.05, 1))
-			self.ax2.grid(alpha = .25)
+				d['line'] = self.ax2.semilogy(d['x'], d['y'], '-', label = f'[{k+1}] {f}', visible = d['visible'], color = d['color'])[0]
 
 		if lin_exist:
 			if self.resize['xmin']:
@@ -136,6 +147,29 @@ class LivePlot():
 				self.ax2.set_ylim(min([d['line'].get_ydata()[d['line'].get_ydata() > 0].min() for d in self.data.values() if d['visible'] and d['yscale'] == 'log']), None)
 			if self.resize['ymax']:
 				self.ax2.set_ylim(None, max([d['line'].get_ydata().max() for d in self.data.values() if d['visible'] and d['yscale'] == 'log']))
+
+		xmin, xmax = self.ax1.get_xlim()
+		notes = [n for n in self.notes if xmin <= mdates.date2num(n[0]) < xmax]
+		l = len(notes)
+
+		if lin_exist:
+			self.ax1.legend(loc = 'upper left', bbox_to_anchor = (1.05, 1))
+			self.ax1.grid(alpha = .25)
+			ymin, ymax = self.ax1.get_ylim()
+			for k,n in enumerate(notes):
+				y = ymin + (1-(k+0.5)/l) * (ymax-ymin)
+				self.ax1.plot([n[0], n[0]], [ymin, ymax], '-', lw = 0.75, color = self.notecolor, zorder = -100)
+				self.ax1.plot(n[0], y, 'wo', mec = self.notecolor, mew = 0.75, ms = 5, zorder = -99)
+				self.ax1.text(n[0], y, n[1], color = self.notecolor, size = 8, va = 'bottom', ha = 'left', rotation = 45, zorder = -98)
+		if log_exist:
+			self.ax2.legend(loc = 'upper left', bbox_to_anchor = (1.05, 1))
+			self.ax2.grid(alpha = .25)
+			ymin, ymax = self.ax2.get_ylim()
+			yi = logspace(log10(ymax),log10(ymin), 2*l+1)[1::2]
+			for y,n in zip(yi, notes):
+				self.ax2.semilogy([n[0], n[0]], [ymin, ymax], '-', lw = 0.75, color = self.notecolor, zorder = -100)
+				self.ax2.semilogy(n[0], y, 'wo', mec = self.notecolor, mew = 0.75, ms = 5, zorder = -99)
+				self.ax2.text(n[0], y, n[1], color = self.notecolor, size = 8, va = 'bottom', ha = 'left', rotation = 45, zorder = -98)
 
 		self.ax1.xaxis.set_major_locator(self.xlocator)
 		self.ax1.xaxis.set_major_formatter(self.xformatter)
