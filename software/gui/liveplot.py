@@ -14,7 +14,7 @@ class LivePlot():
 
 	def __init__(self, file):
 		self.data = None
-		self.notes = None
+		self.notes = []
 		self.notecolor = [.8,.8,.8]
 		self.fields = []
 		self.file = file
@@ -57,13 +57,14 @@ class LivePlot():
 					data.append(l.strip().split(','))
 
 		notes = [[datetime.strptime(r[0], '%Y-%m-%d %H:%M:%S.%f'), r[1]] for r in notes]
-		self.notes = [notes[0]]
-		for n in notes[1:]:
-			if n[0] == self.notes[-1][0]:
-				self.notes[-1][1] += f'\n{n[1]}'
-			else:
-				self.notes.append(n)
-				self.notes[-1][1] = f' {n[1]}'
+		if notes:
+			self.notes = [notes[0]]
+			for n in notes[1:]:
+				if n[0] == self.notes[-1][0]:
+					self.notes[-1][1] += f'\n{n[1]}'
+				else:
+					self.notes.append(n)
+					self.notes[-1][1] = f' {n[1]}'
 
 		self.fields = data[0]
 		data = [{k:v if k == self.fields[0] else float(v) for k,v in zip(self.fields, l)} for l in data[1:]]
