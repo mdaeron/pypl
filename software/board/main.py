@@ -195,6 +195,7 @@ class PyPL():
 
 	async def blink(self):
 		try:
+			self.send('start_prep')
 			self.start_blink_dialog = 0
 			self.stop_blink_dialog = 1
 			self.zero_clock()
@@ -220,6 +221,7 @@ class PyPL():
 			self.newline()
 			self.stop_blink_dialog = 0
 			self.start_blink_dialog = 1
+		self.send('end_prep')
 		
 
 if __name__ == '__main__':

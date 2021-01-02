@@ -15,7 +15,7 @@ class LivePlot():
 	def __init__(self, file):
 		self.data = None
 		self.notes = []
-		self.notecolor = [.8,.8,.8]
+		self.notecolor = [.67,.67,.67]
 		self.fields = []
 		self.file = file
 		self.colors = 'rbgmkcy'
@@ -36,10 +36,10 @@ class LivePlot():
 			d = self.data[f]
 			if d['yscale'] == 'lin':
 				d['ax'] = self.ax1
-				d['line'] = self.ax1.plot(d['x'], d['y'], '-', label = f, visible = d['visible'], color = d['color'])[0]
+				d['line'] = self.ax1.plot(d['x'], d['y'], '-', lw = 2, label = f, visible = d['visible'], color = d['color'])[0]
 			elif d['yscale'] == 'log':
 				d['ax'] = self.ax2
-				d['line'] = self.ax2.semilogy(d['x'], d['y'], '-', label = f, visible = d['visible'], color = d['color'])[0]
+				d['line'] = self.ax2.semilogy(d['x'], d['y'], '-', lw = 2, label = f, visible = d['visible'], color = d['color'])[0]
 		self.resize = {k: True for k in ['xmin', 'xmax', 'ymin', 'ymax']}
 
 		self.rax = plt.axes([.84, .1, .15, .2], frameon = False)
@@ -125,10 +125,10 @@ class LivePlot():
 			d = self.data[f]
 			if d['yscale'] == 'lin':
 				d['ax'] = self.ax1
-				d['line'] = self.ax1.plot(d['x'], d['y'], '-', label = f'[{k+1}] {f}', visible = d['visible'], color = d['color'])[0]
+				d['line'] = self.ax1.plot(d['x'], d['y'], '-', lw = 2, label = f'[{k+1}] {f}', visible = d['visible'], color = d['color'])[0]
 			elif d['yscale'] == 'log':
 				d['ax'] = self.ax2
-				d['line'] = self.ax2.semilogy(d['x'], d['y'], '-', label = f'[{k+1}] {f}', visible = d['visible'], color = d['color'])[0]
+				d['line'] = self.ax2.semilogy(d['x'], d['y'], '-', lw = 2, label = f'[{k+1}] {f}', visible = d['visible'], color = d['color'])[0]
 
 		if lin_exist:
 			if self.resize['xmin']:
@@ -177,7 +177,7 @@ class LivePlot():
 		plt.draw()
 
 	def start(self):
-		self.ani = animation.FuncAnimation(self.fig, self.animation, interval = 1000)
+		self.ani = animation.FuncAnimation(self.fig, self.animation, interval = 500)
 		plt.show()
 
 LivePlot(sys.argv[1]).start()

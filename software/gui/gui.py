@@ -24,7 +24,13 @@ class PyPL_GUI():
 		self.population = []
 		self.state = {}
 		self.start_of_timer = arrow.now()
-
+		Path('logs/').mkdir(exist_ok  =True)
+		Path('logs/bg/').mkdir(exist_ok  =True)
+		Path('logs/other/').mkdir(exist_ok  =True)
+		Path('logs/preplogs/').mkdir(exist_ok  =True)
+		self.current_preplog = None
+		self.preplog_task = None
+		
 		@self.window.event
 		def on_draw():
 			self.window.clear()
@@ -40,22 +46,36 @@ class PyPL_GUI():
 						w.activate()
 						break
 
-	def log(self, dt, echo = None):
-		self.logfile = Path('logs/'+arrow.now().format('YYYY-MM-DD') + '.csv')
-		if self.logfile.exists():
-			fid = open(self.logfile, 'a')
+	def start_prep(self, subdir = 'preplogs', prefix = 'carousel_'):
+		self.current_preplog = f'logs/{subdir}/{prefix}' + arrow.now().format('YYYY-MM-DD-HH[h]mm') + '.csv'
+
+	def log(self, echo = None, subdir = 'bg', prefix = ''):
+		if subdir == 'bg':
+			logfile = Path(f'logs/{subdir}/{prefix}' + arrow.now().format('YYYY-MM-DD') + '.csv')
+		elif subdir == 'preplogs':
+			logfile = Path(self.current_preplog)
+
+		if logfile.exists():
+			fid = open(logfile, 'a')
 		else:
-			self.logfile.parent.mkdir(exist_ok  =True)
-			fid = open(self.logfile, 'w')
+			fid = open(logfile, 'w')
 			fid.write('Time,X,Y,Z')
 # 			fid.write('Time,T1,T2')
+
 		if echo is None:
 			fid.write(f"\n{self.state['NOW']},{self.state['x']:.2f},{self.state['y']:.2f},{self.state['z']:.2f}")
 # 			fid.write(f"\n{self.state['NOW']},{self.state['T1']:.2f},{self.state['T2']:.2f}")
 		else:
 			fid.write(f"\n# {self.state['NOW']},{echo}")
+
 		fid.close()
 	
+	def bg_log(self, t, echo = None, subdir = 'bg', prefix = ''):
+		self.log(echo = echo, subdir = subdir, prefix = prefix)
+
+	def prep_log(self, t, echo = None, subdir = 'preplogs', prefix = ''):
+		self.log(echo = echo, subdir = subdir, prefix = prefix)
+
 	def read(self, dt):
 
 		# read instructions from serial
@@ -77,14 +97,14 @@ class PyPL_GUI():
 						self.state[k] = float(v[1:])
 					elif v[0] == 's':
 						self.state[k] = v[1:]
-				print(self.state, end = '\r')
+# 				print(self.state, end = '\r')
 			elif i[0] == 'echo':
 				for j in i[1:]:
 					print(j)
 			elif i[0] == 'echolog':
 				for j in i[1:]:
 					print(j)
-					self.log(0, echo = j)
+					self.prep_log(0, echo = j)
 			elif i[0] == 'newline':
 				print('')
 			elif i[0] == 'clearline':
@@ -95,6 +115,13 @@ class PyPL_GUI():
 				print(f'{t.format("YYYY-MM-DD HH:mm:ss")} {Fore.GREEN}[ {dt//60:02.0f}:{dt % 60:02.0f} ]{Style.RESET_ALL} ', end = '')
 			elif i[0] == 'zero_clock':
 				self.start_of_timer = arrow.now()
+			elif i[0] == 'end_prep':
+				pyglet.clock.unschedule(self.prep_log)
+				self.current_preplog = None
+			elif i[0] == 'start_prep':
+				self.start_prep()
+				pyglet.clock.schedule_interval(self.prep_log, .5)
+
 
 	def send(self, txt):
 		self.board.write(txt.encode())
@@ -105,10 +132,10 @@ class PyPL_GUI():
 
 	def start(self):
 		self.set_rtc()
+		pyglet.clock.schedule_interval(self.bg_log, 1)
 		pyglet.clock.schedule_interval(self.read, 0.05)
-		pyglet.clock.schedule_interval(self.log, 1)
 		pyglet.app.run()
-	
+
 	def start_log(self, uid):
 		print(f'start log {uid}')
 
