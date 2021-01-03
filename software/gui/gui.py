@@ -4,9 +4,21 @@ import pyglet, serial, glob, time, arrow, sys
 from pyglet.window import mouse
 from pathlib import Path
 from colorama import Fore, Style
+from collections import defaultdict
 
 pyglet.resource.path = ['img']
 pyglet.resource.reindex()
+
+class DummyBoard():
+	def __init__(self):
+		pass
+
+	def write(self, msg):
+		pass
+
+	def inWaiting(self):
+		return False
+
 
 class PyPL_GUI():
 	
@@ -17,12 +29,16 @@ class PyPL_GUI():
 		):
 		self.bg_img = pyglet.resource.image(bg_img)
 		self.window = pyglet.window.Window(width = self.bg_img.width, height = self.bg_img.height)
-		self.board = serial.Serial(glob.glob(port)[0], timeout = timeout)
+		glb = glob.glob(port)
+		if glb:
+			self.board = serial.Serial(glp[0], timeout = timeout)
+		else:
+			self.board = DummyBoard()
 		self.rbuf = b''
 		self.board.write(b'\r')
 		self.instructions = []
 		self.population = []
-		self.state = {}
+		self.state = defaultdict(lambda: 0.)
 		self.start_of_timer = arrow.now()
 		Path('logs/').mkdir(exist_ok  =True)
 		Path('logs/bg/').mkdir(exist_ok  =True)
