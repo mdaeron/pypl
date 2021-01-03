@@ -29,7 +29,7 @@ class PyPL_GUI():
 		Path('logs/other/').mkdir(exist_ok  =True)
 		Path('logs/preplogs/').mkdir(exist_ok  =True)
 		self.current_preplog = None
-		self.preplog_task = None
+		self.current_other_log = None
 		
 		@self.window.event
 		def on_draw():
@@ -54,6 +54,8 @@ class PyPL_GUI():
 			logfile = Path(f'logs/{subdir}/{prefix}' + arrow.now().format('YYYY-MM-DD') + '.csv')
 		elif subdir == 'preplogs':
 			logfile = Path(self.current_preplog)
+		elif subdir == 'other':
+			logfile = Path(self.current_other_log)
 
 		if logfile.exists():
 			fid = open(logfile, 'a')
@@ -74,6 +76,9 @@ class PyPL_GUI():
 		self.log(echo = echo, subdir = subdir, prefix = prefix)
 
 	def prep_log(self, t, echo = None, subdir = 'preplogs', prefix = ''):
+		self.log(echo = echo, subdir = subdir, prefix = prefix)
+
+	def other_log(self, t, echo = None, subdir = 'other', prefix = ''):
 		self.log(echo = echo, subdir = subdir, prefix = prefix)
 
 	def read(self, dt):
@@ -136,11 +141,13 @@ class PyPL_GUI():
 		pyglet.clock.schedule_interval(self.read, 0.05)
 		pyglet.app.run()
 
-	def start_log(self, uid):
-		print(f'start log {uid}')
+	def start_other_log(self, uid, subdir = 'other', prefix = ''):
+		self.current_other_log = f'logs/{subdir}/{prefix}' + arrow.now().format('YYYY-MM-DD-HH[h]mm') + '.csv'
+		pyglet.clock.schedule_interval(self.other_log, .5)
 
-	def stop_log(self, uid):
-		print(f'stop log {uid}')
+	def stop_other_log(self, uid):
+		pyglet.clock.unschedule(self.other_log)
+		self.current_other_log = None
 
 	
 class Widget():
@@ -359,9 +366,9 @@ class Logger_Widget(Widget):
 	def activate(self):
 		self.state = not self.state
 		if self.state:
-			self.parent.start_log(self.uid)
+			self.parent.start_other_log(self.uid)
 		else:
-			self.parent.stop_log(self.uid)
+			self.parent.stop_other_log(self.uid)
 	
 
 class Dialog_Widget(Widget):
@@ -425,6 +432,6 @@ if __name__ == '__main__':
 	Dialog_Widget(UI, 0,   50, 'confirm_stop_blink_dialog', 'button_abort.png', instruction = 'confirm_stop_blink')
 	Dialog_Widget(UI, 0,  -50, 'undo_stop_blink_dialog', 'button_undo.png', instruction = 'undo_stop_blink')
 
-# 	Logger_Widget(UI,  0, 100, 'T1')
+	Logger_Widget(UI,  0, 100, 'y')
 
 	UI.start()
