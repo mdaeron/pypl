@@ -1,4 +1,5 @@
 import ustruct, math, micropython, uasyncio
+# from timing import timing
 
 class MAX31855:
 	def __init__(self, spi, cs, refresh = 0.25):
@@ -8,12 +9,6 @@ class MAX31855:
 		self.cs = cs
 		self.csv = self.cs.value
 		self.data = bytearray(4)
-# 		self.TR = None
-# 		self.TAMB = None
-# 		self.VOUT = None
-# 		self.VREF = None
-# 		self.VTOTAL = None
-# 		self.TCOR = None
 		self.task = None
 		self.T = 0.
 		self.start()
@@ -58,6 +53,7 @@ class MAX31855:
 		'''Cold junction temperature in degrees Celsius'''
 		return self._read(both = False, internal = True)
 
+# 	@timing
 	@micropython.native
 	def T_NIST(self):
 		'''
@@ -65,6 +61,7 @@ class MAX31855:
 		raw voltages and NIST approximation for Type K, see:
 		https://srdata.nist.gov/its90/download/type_k.tab
 		https://srdata.nist.gov/its90/type_k/kcoefficients_inverse.html
+		Takes about 0.38 ms to complete.
 		'''
 
 		TR, TAMB = self._read()
@@ -77,7 +74,7 @@ class MAX31855:
 
 		# cold junction equivalent thermocouple voltage (more accurate version)
 		if TAMB >= 0:
-			VREF = ( # takes 160 ms
+			VREF = ( # takes 160 us
 				-0.176004136860e-01
 				+ 0.389212049750e-01 * TAMB
 				+ 0.185587700320e-04 * TAMB ** 2
@@ -89,7 +86,7 @@ class MAX31855:
 				+ 0.971511471520e-22 * TAMB ** 8
 				+ -0.121047212750e-25 * TAMB ** 9
 				+ 0.1185976
-				* math.exp(-0.1183432e-03 * (TAMB - 0.1269686e03) ** 2) # takes 25-30 ms
+				* math.exp(-0.1183432e-03 * (TAMB - 0.1269686e03) ** 2) # takes 25-30 us
 			)
 		else:
 			VREF = (

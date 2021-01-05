@@ -5,6 +5,7 @@ from MKSGauge import MKSGauge
 from max31865 import PT1000
 from max31855 import MAX31855
 from mcp23017 import MCP23017
+from timing import timing
 
 class Valve():
 

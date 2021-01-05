@@ -31,7 +31,7 @@ class PyPL_GUI():
 		self.window = pyglet.window.Window(width = self.bg_img.width, height = self.bg_img.height)
 		glb = glob.glob(port)
 		if glb:
-			self.board = serial.Serial(glp[0], timeout = timeout)
+			self.board = serial.Serial(glb[0], timeout = timeout)
 		else:
 			self.board = DummyBoard()
 		self.rbuf = b''
