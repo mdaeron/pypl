@@ -44,7 +44,7 @@ class PT1000():
 		if deselect: self.CS(True)
 		return out
 		
-	def __init__(self, cs_pin, spi, wires=2, refresh = 0.25):
+	def __init__(self, spi, cs_pin, wires=2, refresh = 0.25):
 		self.T = None
 		self.refresh = refresh
 		self.CS = pyb.Pin(cs_pin, mode=pyb.Pin.OUT)

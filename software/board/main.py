@@ -6,6 +6,8 @@ from max31865 import PT1000
 from max31855 import MAX31855
 from mcp23017 import MCP23017
 from timing import timing
+from stepper import Stepper
+from heartbeat import Heartbeat
 
 class Valve():
 
@@ -25,10 +27,24 @@ class Valve():
 		self.gpio.value(1 - self.gpio.value())
 
 
+class DummySensor():
+	def __init__(self):
+		self.T = 0
+		self.P = 0
+		self.v = 0
+	
+	def value(self, *args):
+		if args:
+			self.v = args[0]
+		else:
+			return(self.v)
+
+
 class PyPL():
 
 	def __init__(self, cycle = 0.01, separators = '\r;', status_cycle = 0.1, DEBUG = False):
 		self.DEBUG = DEBUG
+		self.heartbeat = Heartbeat()
 		self.serial = pyb.USB_VCP()
 		self.cycle = cycle
 		self.clock = 0
@@ -38,44 +54,50 @@ class PyPL():
 		self.status_cycle = status_cycle
 		self.task_blink = None
 		self.rtc = pyb.RTC()
-		self.accel = pyb.Accel()
+# 		self.accel = pyb.Accel()
+
+
+		self.stepper = Stepper()
+
+
+		self.P1 = DummySensor()
+		self.P2 = DummySensor()
+		self.P3 = DummySensor()
+		self.P4 = DummySensor()
+
+# 		self.P1 = MKSGauge(6)
+# 		self.P2 = MKSGauge(4)
+# 		self.P3 = MKSGauge(1)
+# 		self.P4 = MKSGauge(2)
+
+
+		self.V1 = Valve(DummySensor())
+		self.V2 = Valve(DummySensor())
+		self.V3 = Valve(DummySensor())
+		self.V4 = Valve(DummySensor())
 
 # 		self.i2c = machine.I2C(2)
 # 		self.gpio = MCP23017(self.i2c, 0x20)
 # 		self.gpio.mode = 0x0000 # configure all pins as outputs
 # 		self.gpio.gpio = 0x0000 # set all pins to low
-
-# 		self.pt1000_spi = machine.SoftSPI(
-# 			baudrate = 100000,
-# 			polarity = 0,
-# 			phase = 1,
-# 			bits = 8,
-# 			firstbit = machine.SPI.MSB,
-# 			sck = machine.Pin('Y6'),
-# 			mosi = machine.Pin('Y7'),
-# 			miso = machine.Pin('Y8'),
-# 			)
-
-		self.tc_spi = pyb.SPI(2, mode = pyb.SPI.MASTER, baudrate = 10**7, phase = 1)
-		self.T1 = MAX31855(self.tc_spi, pyb.Pin('X11', pyb.Pin.OUT))
-		self.T2 = MAX31855(self.tc_spi, pyb.Pin('X12', pyb.Pin.OUT))
-
-# 		self.pt1000_spi = pyb.SPI(2,
-# 			mode = pyb.SPI.MASTER,
-# 			baudrate=100000,
-# 			polarity=0,
-# 			phase=1,
-# 			bits = 8,
-# 			firstbit = pyb.SPI.MSB)
-
-# 		self.T1 = PT1000('X5', self.pt1000_spi)
-# 		self.T2 = PT1000('X6', self.pt1000_spi)
-# 		self.T3 = PT1000('X11', self.pt1000_spi)
-# 		self.T4 = PT1000('X12', self.pt1000_spi)
-
+# 
 # 		self.V1 = Valve(self.gpio[0])
-# 		self.V2 = Valve(self.gpio[1])
+# 		self.V2 = Valve(pyb.Pin('Y12', pyb.Pin.OUT_PP))
 # 		self.V3 = Valve(self.gpio[2])
+# 		self.V4 = Valve(self.gpio[3])
+
+
+		self.T1 = DummySensor()
+		self.T2 = DummySensor()
+		self.T3 = DummySensor()
+		self.T4 = DummySensor()
+
+		self.spi = pyb.SPI(2, mode = pyb.SPI.MASTER, baudrate = 10**7, phase = 1)
+# 		self.T1 = PT1000(self.spi, pyb.Pin('X18', pyb.Pin.OUT))
+# 		self.T2 = PT1000(self.spi, pyb.Pin('X6', pyb.Pin.OUT))
+# 		self.T3 = MAX31855(self.spi, pyb.Pin('X19', pyb.Pin.OUT))
+# 		self.T4 = MAX31855(self.spi, pyb.Pin('X5', pyb.Pin.OUT))
+
 		
 		self.start_blink_dialog = 1
 		self.stop_blink_dialog = 0
@@ -113,14 +135,21 @@ class PyPL():
 		self.send(
 			'status'
 			+ self.sep2 + self.datetime()
-			+ self.sep2 + 'x=f%.2f' % (self.accel.x() / 32)
-			+ self.sep2 + 'y=f%.2f' % (self.accel.y() / 32)
-			+ self.sep2 + 'z=f%.2f' % (self.accel.z() / 32)
-# 			+ self.sep2 + 'T1=f%.2f' % self.T1.T
-# 			+ self.sep2 + 'T2=f%.2f' % (self.T2.T)
-# 			+ self.sep2 + 'V1=b%s' % self.V1.state()
-# 			+ self.sep2 + 'V2=b%s' % self.V2.state()
-# 			+ self.sep2 + 'V3=b%s' % self.V3.state()
+# 			+ self.sep2 + 'x=f%.2f' % (self.accel.x() / 32)
+# 			+ self.sep2 + 'y=f%.2f' % (self.accel.y() / 32)
+# 			+ self.sep2 + 'z=f%.2f' % (self.accel.z() / 32)
+			+ ('' if self.P1.P is None else (self.sep2 + 'P1=f%.4e' % self.P1.P))
+			+ ('' if self.P2.P is None else (self.sep2 + 'P2=f%.4e' % self.P2.P))
+			+ ('' if self.P3.P is None else (self.sep2 + 'P3=f%.4e' % self.P3.P))
+			+ ('' if self.P4.P is None else (self.sep2 + 'P4=f%.4e' % self.P4.P))
+			+ self.sep2 + 'T1=f%.2f' % self.T1.T
+			+ self.sep2 + 'T2=f%.2f' % self.T2.T
+			+ self.sep2 + 'T3=f%.2f' % self.T3.T
+			+ self.sep2 + 'T4=f%.2f' % self.T4.T
+			+ self.sep2 + 'V1=b%s' % self.V1.state()
+			+ self.sep2 + 'V2=b%s' % self.V2.state()
+			+ self.sep2 + 'V3=b%s' % self.V3.state()
+			+ self.sep2 + 'V4=b%s' % self.V4.state()
 			+ self.sep2 + 'start_blink_dialog=b%s' % self.start_blink_dialog
 			+ self.sep2 + 'stop_blink_dialog=b%s' % self.stop_blink_dialog
 			+ self.sep2 + 'confirm_stop_blink_dialog=b%s' % self.confirm_stop_blink_dialog
@@ -175,6 +204,11 @@ class PyPL():
 				elif i[0] == 'undo_stop_blink':
 					self.confirm_stop_blink_dialog = 0
 					self.undo_stop_blink_dialog = 0
+				elif i[0] == 'stepper':
+					if i[1] == 'fwd':
+						self.stepper.fwd()
+					elif i[1] == 'bwd':
+						self.stepper.bwd()
 				elif i[0] == 'set_rtc':
 					self.rtc.datetime(tuple([int(e) for e in i[1:]]))
 					
@@ -202,16 +236,16 @@ class PyPL():
 			self.zero_clock()
 			self.newline()
 			self.timestamped_echo('Start blinking protocol')
-# 			self.V1.close()
-# 			self.V2.close()
-# 			self.V3.close()
+			self.V1.close()
+			self.V2.close()
+			self.V3.close()
 			self.timestamped_echo('Valves closed')
 			await self.countdown(5)
-# 			self.V1.open()
-# 			self.V2.open()
-# 			self.V3.open()
+			self.V1.open()
+			self.V2.open()
+			self.V3.open()
 			self.timestamped_echo('Valves open')
-			await uasyncio.sleep(1)
+			await self.countdown(5)
 			self.timestamped_echo('End of blinking protocol')
 			self.newline()
 			self.stop_blink_dialog = 0

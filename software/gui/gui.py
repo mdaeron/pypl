@@ -77,12 +77,13 @@ class PyPL_GUI():
 			fid = open(logfile, 'a')
 		else:
 			fid = open(logfile, 'w')
-			fid.write('Time,X,Y,Z')
-# 			fid.write('Time,T1,T2')
+# 			fid.write('Time,P1')
+# 			fid.write('Time,X,Y,Z')
+			fid.write('Time,T2,T4')
 
 		if echo is None:
-			fid.write(f"\n{self.state['NOW']},{self.state['x']:.2f},{self.state['y']:.2f},{self.state['z']:.2f}")
-# 			fid.write(f"\n{self.state['NOW']},{self.state['T1']:.2f},{self.state['T2']:.2f}")
+# 			fid.write(f"\n{self.state['NOW']},{self.state['P1']:.4e}")
+			fid.write(f"\n{self.state['NOW']},{self.state['T2']:.2f},{self.state['T4']:.2f}")
 		else:
 			fid.write(f"\n# {self.state['NOW']},{echo}")
 
@@ -157,11 +158,11 @@ class PyPL_GUI():
 		pyglet.clock.schedule_interval(self.read, 0.05)
 		pyglet.app.run()
 
-	def start_other_log(self, uid, subdir = 'other', prefix = ''):
+	def start_other_log(self, subdir = 'other', prefix = ''):
 		self.current_other_log = f'logs/{subdir}/{prefix}' + arrow.now().format('YYYY-MM-DD-HH[h]mm') + '.csv'
 		pyglet.clock.schedule_interval(self.other_log, .5)
 
-	def stop_other_log(self, uid):
+	def stop_other_log(self):
 		pyglet.clock.unschedule(self.other_log)
 		self.current_other_log = None
 
@@ -333,10 +334,10 @@ class Toggle_Widget(Widget):
 		self.parent.send(f'toggle;{self.uid}\r')
 	
 
-class Logger_Widget(Widget):
+class Command_Widget(Widget):
 	
 	def __init__(self,
-		pypl_instance, x, y, uid,
+		pypl_instance, x, y, f_start, f_stop,
 		on_icon = 'logger_stop.png',
 		off_icon = 'logger_start.png',
 		):
@@ -344,8 +345,9 @@ class Logger_Widget(Widget):
 		Widget.__init__(self)
 
 		self.state = False
-		self.uid = uid
 		self.parent = pypl_instance
+		self.f_start = f_start
+		self.f_stop = f_stop
 
 		self.x = x + (self.parent.window.width) // 2
 		self.y = y + (self.parent.window.height) // 2
@@ -382,9 +384,9 @@ class Logger_Widget(Widget):
 	def activate(self):
 		self.state = not self.state
 		if self.state:
-			self.parent.start_other_log(self.uid)
+			self.f_start()
 		else:
-			self.parent.stop_other_log(self.uid)
+			self.f_stop()
 	
 
 class Dialog_Widget(Widget):
@@ -424,22 +426,66 @@ class Dialog_Widget(Widget):
 
 	def activate(self):
 		self.parent.send(f'{self.instruction}\r')
+
+
+class Sender_Widget(Widget):
+	
+	def __init__(self, pypl_instance, x, y, icon, instruction, alpha = 1):
+
+		Widget.__init__(self)
+
+		self.visible = True
+		self.parent = pypl_instance
+		self.instruction = instruction
+		self.x = x + (self.parent.window.width) // 2
+		self.y = y + (self.parent.window.height) // 2
+
+		self.icon = pyglet.resource.image(icon)
+
+		self.width = self.icon.width
+		self.height = self.icon.height
+
+		self.active_area_type = 'rectangle'
+		self.active_area_rectangle = (-self.width//2, self.width//2, -self.height//2, self.height//2)
+
+		self.sprite = pyglet.sprite.Sprite(
+			self.icon,
+			x + (self.parent.window.width - self.width) // 2,
+			y + (self.parent.window.height - self.height) // 2,
+			)
+		self.sprite.opacity = alpha * 255
+
+		self.parent.population.append(self)
+	
+	def draw(self):
+		if self.visible:
+			self.sprite.draw()
+
+	def activate(self):
+		self.parent.send(f'{self.instruction}\r')
+
 	
 if __name__ == '__main__':
 	
 	UI = PyPL_GUI()
-	Text_Widget(UI, -280, 220, 'x', font_size = 18, fmtstr = 'x = {:.2f}')
-	Icon_Widget(UI, -280, 100, 'x', x_min = -1, x_max = 1, angle_min = -45, angle_max = 45)
-	Text_Widget(UI, 0, 220, 'y', font_size = 18, fmtstr = 'y = {:.2f}')
-	Icon_Widget(UI, 0, 100, 'y', x_min = -1, x_max = 1, angle_min = -45, angle_max = 45)
-	Text_Widget(UI, 280, 220, 'z', font_size = 18, fmtstr = 'z = {:.2f}')
-	Icon_Widget(UI, 280, 100, 'z', x_min = -1, x_max = 1, angle_min = -45, angle_max = 45)
+
+# 	Text_Widget(UI, -280, 220, 'x', font_size = 18, fmtstr = 'x = {:.2f}')
+# 	Icon_Widget(UI, -280, 100, 'x', x_min = -1, x_max = 1, angle_min = -45, angle_max = 45)
+# 	Text_Widget(UI, 0, 220, 'y', font_size = 18, fmtstr = 'y = {:.2f}')
+# 	Icon_Widget(UI, 0, 100, 'y', x_min = -1, x_max = 1, angle_min = -45, angle_max = 45)
+# 	Text_Widget(UI, 280, 220, 'z', font_size = 18, fmtstr = 'z = {:.2f}')
+# 	Icon_Widget(UI, 280, 100, 'z', x_min = -1, x_max = 1, angle_min = -45, angle_max = 45)
+
+# 	Text_Widget(UI, 0, 250, 'P1', font_size = 18, fmtstr = 'P1 = {:.4e}')
+	Text_Widget(UI, 0, 260, 'T2', font_size = 18, fmtstr = 'PT1000 = {:.2f} °C')
+	Text_Widget(UI, 0, 220, 'T4', font_size = 18, fmtstr = 'ThK = {:.2f} °C')
+
 # 	Text_Widget(UI, 0, 220, 'T1', font_size = 18, fmtstr = 'T1 = {:.2f} °C')
 # 	Icon_Widget(UI, 0, 100, 'T1', x_min = 19, x_max = 23, angle_min = -45, angle_max = 45)
 # 	Toggle_Widget(UI, -200, -150, 'V1')
 # 	Text_Widget  (UI, -200,  -60, 'V1', font_size = 14, fmtstr = 'V1 = {!s}')
-# 	Toggle_Widget(UI,    0, -150, 'V2')
-# 	Text_Widget  (UI,    0,  -60, 'V2', font_size = 14, fmtstr = 'V2 = {!s}')
+	Toggle_Widget(UI,    0, -150, 'V2')
+	Text_Widget  (UI,    0,  -60, 'V2', font_size = 14, fmtstr = 'V2 = {!s}')
 # 	Toggle_Widget(UI,  200, -150, 'V3')
 # 	Text_Widget  (UI,  200,  -60, 'V3', font_size = 14, fmtstr = 'V3 = {!s}')
 
@@ -448,6 +494,8 @@ if __name__ == '__main__':
 	Dialog_Widget(UI, 0,   50, 'confirm_stop_blink_dialog', 'button_abort.png', instruction = 'confirm_stop_blink')
 	Dialog_Widget(UI, 0,  -50, 'undo_stop_blink_dialog', 'button_undo.png', instruction = 'undo_stop_blink')
 
-	Logger_Widget(UI,  0, 100, 'y')
+	Command_Widget(UI,  0, 100, f_start = UI.start_other_log, f_stop = UI.stop_other_log)
+	Sender_Widget(UI, 100, -300, 'button_fwd.png', 'stepper;fwd')
+	Sender_Widget(UI, -100, -300, 'button_bwd.png', 'stepper;bwd')
 
 	UI.start()
