@@ -65,7 +65,8 @@ class PyPL_GUI():
 	def start_prep(self, subdir = 'preplogs', prefix = 'carousel_'):
 		self.current_preplog = f'logs/{subdir}/{prefix}' + arrow.now().format('YYYY-MM-DD-HH[h]mm') + '.csv'
 
-	def log(self, echo = None, subdir = 'bg', prefix = ''):
+	def log(self, echo = None, subdir = 'bg', prefix = '', fields = 'T1:.2f,T2:.2f,T3:.2f,T4:.2f,P1:.4e,P2:.4e,P3:.4e,P4:.4e'):
+		fields = [f.split(':') for f in fields.split(',')]
 		if subdir == 'bg':
 			logfile = Path(f'logs/{subdir}/{prefix}' + arrow.now().format('YYYY-MM-DD') + '.csv')
 		elif subdir == 'preplogs':
@@ -79,11 +80,13 @@ class PyPL_GUI():
 			fid = open(logfile, 'w')
 # 			fid.write('Time,P1')
 # 			fid.write('Time,X,Y,Z')
-			fid.write('Time,T2,T4')
+			fid.write('Time,' + ','.join([f for f, g in fields]))
 
 		if echo is None:
-# 			fid.write(f"\n{self.state['NOW']},{self.state['P1']:.4e}")
-			fid.write(f"\n{self.state['NOW']},{self.state['T2']:.2f},{self.state['T4']:.2f}")
+			fid.write(','.join(
+				[f"\n{self.state['NOW']}"] +
+				['' if self.state[f] is None else f"{self.state[f]:{g}}" for f,g in fields]
+				))
 		else:
 			fid.write(f"\n# {self.state['NOW']},{echo}")
 
@@ -119,6 +122,8 @@ class PyPL_GUI():
 						self.state[k] = float(v[1:])
 					elif v[0] == 's':
 						self.state[k] = v[1:]
+					elif v[0] == 'n':
+						self.state[k] = None
 # 				print(self.state, end = '\r')
 			elif i[0] == 'echo':
 				for j in i[1:]:
@@ -226,7 +231,10 @@ class Text_Widget(Widget):
 			self.label.text = self.fmtstr.format(sum(self.state) / self.avg)
 		else:
 			self.state = self.parent.state[self.uid]
-			self.label.text = self.fmtstr.format(self.state)
+			try:
+				self.label.text = self.fmtstr.format(self.state)
+			except TypeError:
+				self.label.text = 'NaN'
 		self.label.draw()
 
 

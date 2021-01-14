@@ -22,6 +22,7 @@ class MAX31855:
 			self.csv(1)
 
 		if errorcheck:
+			print(self.data)
 			if self.data[3] & 0x01:
 				raise RuntimeError("thermocouple not connected")
 			if self.data[3] & 0x02:
@@ -31,6 +32,12 @@ class MAX31855:
 			if self.data[1] & 0x01:
 				raise RuntimeError("faulty reading")
 
+		if self.data[3] | 0x07 or self.data[1] & 0x01:
+			if both:
+				return (None, None)
+			else:
+				return None
+		
 		temp, refer = ustruct.unpack('>hh', self.data)
 
 		if both:
@@ -65,6 +72,8 @@ class MAX31855:
 		'''
 
 		TR, TAMB = self._read()
+		if TAMB is None:
+			return None
 
 		# thermocouple voltage based on MAX31855's uV/degC for type K (table 1)
 		VOUT = 0.041276 * (TR - TAMB)

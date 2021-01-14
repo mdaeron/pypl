@@ -60,43 +60,43 @@ class PyPL():
 		self.stepper = Stepper()
 
 
-		self.P1 = DummySensor()
-		self.P2 = DummySensor()
-		self.P3 = DummySensor()
-		self.P4 = DummySensor()
+# 		self.P1 = DummySensor()
+# 		self.P2 = DummySensor()
+# 		self.P3 = DummySensor()
+# 		self.P4 = DummySensor()
 
-# 		self.P1 = MKSGauge(6)
-# 		self.P2 = MKSGauge(4)
-# 		self.P3 = MKSGauge(1)
-# 		self.P4 = MKSGauge(2)
+		self.P1 = MKSGauge(6)
+		self.P2 = MKSGauge(4)
+		self.P3 = MKSGauge(1)
+		self.P4 = MKSGauge(2)
+
+		try:
+			self.i2c = machine.I2C(2)
+			self.gpio = MCP23017(self.i2c, 0x20)
+			self.gpio.mode = 0x0000 # configure all pins as outputs
+			self.gpio.gpio = 0x0000 # set all pins to low
+
+			self.V1 = Valve(self.gpio[0])
+			self.V2 = Valve(pyb.Pin('Y12', pyb.Pin.OUT_PP))
+			self.V3 = Valve(self.gpio[2])
+			self.V4 = Valve(self.gpio[3])
+		except OSError:
+			self.V1 = Valve(DummySensor())
+			self.V2 = Valve(DummySensor())
+			self.V3 = Valve(DummySensor())
+			self.V4 = Valve(DummySensor())
 
 
-		self.V1 = Valve(DummySensor())
-		self.V2 = Valve(DummySensor())
-		self.V3 = Valve(DummySensor())
-		self.V4 = Valve(DummySensor())
-
-# 		self.i2c = machine.I2C(2)
-# 		self.gpio = MCP23017(self.i2c, 0x20)
-# 		self.gpio.mode = 0x0000 # configure all pins as outputs
-# 		self.gpio.gpio = 0x0000 # set all pins to low
-# 
-# 		self.V1 = Valve(self.gpio[0])
-# 		self.V2 = Valve(pyb.Pin('Y12', pyb.Pin.OUT_PP))
-# 		self.V3 = Valve(self.gpio[2])
-# 		self.V4 = Valve(self.gpio[3])
-
-
-		self.T1 = DummySensor()
-		self.T2 = DummySensor()
-		self.T3 = DummySensor()
-		self.T4 = DummySensor()
+# 		self.T1 = DummySensor()
+# 		self.T2 = DummySensor()
+# 		self.T3 = DummySensor()
+# 		self.T4 = DummySensor()
 
 		self.spi = pyb.SPI(2, mode = pyb.SPI.MASTER, baudrate = 10**7, phase = 1)
-# 		self.T1 = PT1000(self.spi, pyb.Pin('X18', pyb.Pin.OUT))
-# 		self.T2 = PT1000(self.spi, pyb.Pin('X6', pyb.Pin.OUT))
-# 		self.T3 = MAX31855(self.spi, pyb.Pin('X19', pyb.Pin.OUT))
-# 		self.T4 = MAX31855(self.spi, pyb.Pin('X5', pyb.Pin.OUT))
+		self.T1 = PT1000(self.spi, pyb.Pin('X18', pyb.Pin.OUT))
+		self.T2 = PT1000(self.spi, pyb.Pin('X6', pyb.Pin.OUT))
+		self.T3 = MAX31855(self.spi, pyb.Pin('X19', pyb.Pin.OUT))
+		self.T4 = MAX31855(self.spi, pyb.Pin('X5', pyb.Pin.OUT))
 
 		
 		self.start_blink_dialog = 1
@@ -138,14 +138,14 @@ class PyPL():
 # 			+ self.sep2 + 'x=f%.2f' % (self.accel.x() / 32)
 # 			+ self.sep2 + 'y=f%.2f' % (self.accel.y() / 32)
 # 			+ self.sep2 + 'z=f%.2f' % (self.accel.z() / 32)
-			+ ('' if self.P1.P is None else (self.sep2 + 'P1=f%.4e' % self.P1.P))
-			+ ('' if self.P2.P is None else (self.sep2 + 'P2=f%.4e' % self.P2.P))
-			+ ('' if self.P3.P is None else (self.sep2 + 'P3=f%.4e' % self.P3.P))
-			+ ('' if self.P4.P is None else (self.sep2 + 'P4=f%.4e' % self.P4.P))
-			+ self.sep2 + 'T1=f%.2f' % self.T1.T
-			+ self.sep2 + 'T2=f%.2f' % self.T2.T
-			+ self.sep2 + 'T3=f%.2f' % self.T3.T
-			+ self.sep2 + 'T4=f%.2f' % self.T4.T
+			+ self.sep2 + ('P1=n' if self.P1.P is None else ('P1=f%.4e' % self.P1.P))
+			+ self.sep2 + ('P2=n' if self.P2.P is None else ('P2=f%.4e' % self.P2.P))
+			+ self.sep2 + ('P3=n' if self.P3.P is None else ('P3=f%.4e' % self.P3.P))
+			+ self.sep2 + ('P4=n' if self.P4.P is None else ('P4=f%.4e' % self.P4.P))
+			+ self.sep2 + ('T1=n' if self.T1.T is None else ('T1=f%.2f' % self.T1.T))
+			+ self.sep2 + ('T2=n' if self.T2.T is None else ('T2=f%.2f' % self.T2.T))
+			+ self.sep2 + ('T3=n' if self.T3.T is None else ('T3=f%.2f' % self.T3.T))
+			+ self.sep2 + ('T4=n' if self.T4.T is None else ('T4=f%.2f' % self.T4.T))
 			+ self.sep2 + 'V1=b%s' % self.V1.state()
 			+ self.sep2 + 'V2=b%s' % self.V2.state()
 			+ self.sep2 + 'V3=b%s' % self.V3.state()
