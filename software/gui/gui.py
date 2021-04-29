@@ -24,14 +24,16 @@ class PyPL_GUI():
 	
 	def __init__(self,
 		bg_img = 'bg_img.png',
-		port = '/dev/tty.usbmodem*',
+		port = ['/dev/tty.usbmodem*', '/dev/ttyACM*'],
 		timeout = 0.1,
 		):
 		self.bg_img = pyglet.resource.image(bg_img)
 		self.window = pyglet.window.Window(width = self.bg_img.width, height = self.bg_img.height)
-		glb = glob.glob(port)
-		if glb:
-			self.board = serial.Serial(glb[0], timeout = timeout)
+		for p in port:
+			glb = glob.glob(p)
+			if glb:
+				self.board = serial.Serial(glb[0], timeout = timeout)
+				break
 		else:
 			self.board = DummyBoard()
 		self.rbuf = b''
@@ -228,13 +230,16 @@ class Text_Widget(Widget):
 	def draw(self):
 		if self.avg > 1:
 			self.state = self.state[1:] + [self.parent.state[self.uid]]
-			self.label.text = self.fmtstr.format(sum(self.state) / self.avg)
+			try:
+				self.label.text = self.fmtstr.format(sum(self.state) / self.avg)
+			except TypeError:
+				self.label.text = '#'
 		else:
 			self.state = self.parent.state[self.uid]
 			try:
 				self.label.text = self.fmtstr.format(self.state)
 			except TypeError:
-				self.label.text = 'NaN'
+				self.label.text = '#'
 		self.label.draw()
 
 
@@ -484,25 +489,25 @@ if __name__ == '__main__':
 # 	Text_Widget(UI, 280, 220, 'z', font_size = 18, fmtstr = 'z = {:.2f}')
 # 	Icon_Widget(UI, 280, 100, 'z', x_min = -1, x_max = 1, angle_min = -45, angle_max = 45)
 
-# 	Text_Widget(UI, 0, 250, 'P1', font_size = 18, fmtstr = 'P1 = {:.4e}')
-	Text_Widget(UI, 0, 260, 'T2', font_size = 18, fmtstr = 'PT1000 = {:.2f} °C')
-	Text_Widget(UI, 0, 220, 'T4', font_size = 18, fmtstr = 'ThK = {:.2f} °C')
-
-# 	Text_Widget(UI, 0, 220, 'T1', font_size = 18, fmtstr = 'T1 = {:.2f} °C')
+	Text_Widget(UI, 0, 300, 'P1', font_size = 18, fmtstr = 'P1 = {:.4e}')
+# 	Text_Widget(UI, 0, 260, 'T2', font_size = 18, fmtstr = 'PT1000 = {:.2f} °C')
+	Text_Widget(UI, 0, 220, 'T3', font_size = 18, fmtstr = 'ThK = {:.2f} °C')
 # 	Icon_Widget(UI, 0, 100, 'T1', x_min = 19, x_max = 23, angle_min = -45, angle_max = 45)
-# 	Toggle_Widget(UI, -200, -150, 'V1')
-# 	Text_Widget  (UI, -200,  -60, 'V1', font_size = 14, fmtstr = 'V1 = {!s}')
+
+	Toggle_Widget(UI, -200, -150, 'V1')
+	Text_Widget  (UI, -200,  -60, 'V1', font_size = 14, fmtstr = 'V1 = {!s}')
 	Toggle_Widget(UI,    0, -150, 'V2')
 	Text_Widget  (UI,    0,  -60, 'V2', font_size = 14, fmtstr = 'V2 = {!s}')
-# 	Toggle_Widget(UI,  200, -150, 'V3')
-# 	Text_Widget  (UI,  200,  -60, 'V3', font_size = 14, fmtstr = 'V3 = {!s}')
+	Toggle_Widget(UI,  200, -150, 'V3')
+	Text_Widget  (UI,  200,  -60, 'V3', font_size = 14, fmtstr = 'V3 = {!s}')
+
+	Command_Widget(UI,  0, 100, f_start = UI.start_other_log, f_stop = UI.stop_other_log)
 
 	Dialog_Widget(UI, 0, -300, 'start_blink_dialog', 'button_start.png', instruction = 'start_blink')
 	Dialog_Widget(UI, 0, -300, 'stop_blink_dialog', 'button_stop.png', instruction = 'stop_blink')
 	Dialog_Widget(UI, 0,   50, 'confirm_stop_blink_dialog', 'button_abort.png', instruction = 'confirm_stop_blink')
 	Dialog_Widget(UI, 0,  -50, 'undo_stop_blink_dialog', 'button_undo.png', instruction = 'undo_stop_blink')
-
-	Command_Widget(UI,  0, 100, f_start = UI.start_other_log, f_stop = UI.stop_other_log)
+	
 	Sender_Widget(UI, 100, -300, 'button_fwd.png', 'stepper;fwd')
 	Sender_Widget(UI, -100, -300, 'button_bwd.png', 'stepper;bwd')
 

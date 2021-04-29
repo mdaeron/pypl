@@ -14,7 +14,7 @@ class MAX31855:
 		self.start()
 	
 	@micropython.native
-	def _read(self, both = True, internal = False, errorcheck = False):
+	def _read(self, both = True, internal = False, errorcheck = True):
 		self.csv(0)
 		try:
 			self.spirecv(self.data)
@@ -22,7 +22,6 @@ class MAX31855:
 			self.csv(1)
 
 		if errorcheck:
-			print(self.data)
 			if self.data[3] & 0x01:
 				raise RuntimeError("thermocouple not connected")
 			if self.data[3] & 0x02:
@@ -32,7 +31,7 @@ class MAX31855:
 			if self.data[1] & 0x01:
 				raise RuntimeError("faulty reading")
 
-		if self.data[3] | 0x07 or self.data[1] & 0x01:
+		if self.data[3] & 0x07 or self.data[1] & 0x01:
 			if both:
 				return (None, None)
 			else:
