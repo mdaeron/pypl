@@ -2,9 +2,11 @@
 	<foreignObject width="100%" height="100%">
 		<div xmlns="http://www.w3.org/1999/xhtml">
 			<style>
+				
 
 				h1 { counter-reset: h2counter; }
 				h2 { counter-reset: h3counter; }
+				h2 { color: red; }
 				h3 { counter-reset: h4counter; }
 				h4 { counter-reset: h5counter; }
 				h5 { counter-reset: h6counter; }
