@@ -10,14 +10,9 @@
 			h5 { counter-reset: h6counter; }
 			h6 {}
 
-			h1:before {
-				counter-increment: h1counter;
-				content: counter(h1counter) ".\0000a0\0000a0";
-				}
-
 			h2:before {
 				counter-increment: h2counter;
-				content: counter(h1counter) "." counter(h2counter) ".\0000a0\0000a0";
+				content: counter(h2counter) ".\0000a0\0000a0";
 				}
 
 			h3:before {
@@ -42,6 +37,9 @@
 
 		</style>
 		<h1>HELLO WORLD!</h1>
+		<h2>foo</h2>
+		<h2>foo</h2>
+		<h3>foo</h3>
 		<h2>foo</h2>
 		<h1>HELLO WORLD!</h1>
 		<h1>HELLO WORLD!</h1>
