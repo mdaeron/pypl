@@ -7,7 +7,9 @@ An open source, open hardware, automated preparation line for geochemical sample
 * monitoring MKS vacuum/pressure gauges.
 * controlling stepper motors
 
+<p align="center">
 ![pypl_schematic](pictures/pypl_schematic.png)
+</p>
 
 ## 1 – Hardware
 ### 1.1 – Motherboard
