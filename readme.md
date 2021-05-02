@@ -10,7 +10,7 @@ An open source, open hardware, automated preparation line for geochemical sample
 The user interface runs on a raspberry pi computer. Lower-level ineraction with sensors and various electronic components is handled by a microcontroler (a [pyboard](https://docs.micropython.org/en/latest/pyboard/quickref.html) running [micropython](https://docs.micropython.org/en/latest/index.html)):
 
 <div align="center">
-<img src="pictures/pypl_schematic.png">
+<img style="margin-top: 6ex" src="pictures/pypl_schematic.png">
 </div>
 
 ## 1 – Hardware
