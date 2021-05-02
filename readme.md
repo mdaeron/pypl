@@ -8,7 +8,9 @@ An open source, open hardware, automated preparation line for geochemical sample
 * controlling stepper motors
 
 <p align="center">
+
 ![pypl_schematic](pictures/pypl_schematic.png)
+
 </p>
 
 ## 1 – Hardware
