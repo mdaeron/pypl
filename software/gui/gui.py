@@ -489,6 +489,10 @@ if __name__ == '__main__':
 # 	Text_Widget(UI, 280, 220, 'z', font_size = 18, fmtstr = 'z = {:.2f}')
 # 	Icon_Widget(UI, 280, 100, 'z', x_min = -1, x_max = 1, angle_min = -45, angle_max = 45)
 
+	Icon_Widget(UI, 0, 0, 'T3', alpha_min = 1, alpha_max = 1, icon = 'tepid_box.png')
+	Icon_Widget(UI, 0, 0, 'T3', x_min = 25.2, x_max = 27, alpha_min = 0, alpha_max = 1, icon = 'hot_box.png')
+	Icon_Widget(UI, 0, 0, 'T3', x_min = 24.8, x_max = 23, alpha_min = 0, alpha_max = 1, icon = 'cold_box.png')
+
 	Text_Widget(UI, 0, 300, 'P1', font_size = 18, fmtstr = 'P1 = {:.4e}')
 # 	Text_Widget(UI, 0, 260, 'T2', font_size = 18, fmtstr = 'PT1000 = {:.2f} °C')
 	Text_Widget(UI, 0, 220, 'T3', font_size = 18, fmtstr = 'ThK = {:.2f} °C')

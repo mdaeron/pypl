@@ -16,6 +16,9 @@ The user interface runs on a raspberry pi computer. Lower-level ineraction with 
 ## 1 – Hardware
 ### 1.1 – Motherboard
 ### 1.2 – Pyboard
+
+Note that the maximum total current out of the 3.3V output pins of the pyboard is 250 mA (see [here](https://forum.micropython.org/viewtopic.php?t=9329) for a more complete discussion).
+
 ### 1.3 – Stepper Motor Controller Board
 ### 1.4 – Temperature Readings
 
@@ -28,6 +31,9 @@ Up to 4 independent temperature reading. Each reading may come from either:
 
 * [Adafruit 3263](https://www.adafruit.com/product/3263)
 * Based on MAX31856
+* Configured for continuous readings and no averaging; with these settings the IC automatically measures T every 100 ms or so (82 ms in our tests) with measurement noise on the order of 0.05 °C.
+* Reading the latest measurements using SPI is much faster (only about 0.14 ms when tested using a baudrate of 1e7).
+* Maximum current used by each MAX31856 is 2 mA.
 
 ![adafruit_3263](pictures/adafruit_3263.png)
 
