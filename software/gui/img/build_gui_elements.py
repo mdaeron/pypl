@@ -4,9 +4,293 @@ from matplotlib.patches import *
 from pylab import *
 
 DPI = 100
-VALVE_RADIUS = 0.2
-VALVE_THICKNESS = 5
+
+from matplotlib import rcParams
+
+rcParams['font.family'] = 'sans-serif'
+rcParams['font.sans-serif'] = 'Helvetica'
+rcParams['font.size'] = 10
+rcParams['mathtext.fontset'] = 'custom'
+rcParams['mathtext.rm'] = 'sans'
+rcParams['mathtext.bf'] = 'sans:bold'
+rcParams['mathtext.it'] = 'sans:italic'
+rcParams['mathtext.cal'] = 'sans:italic'
+rcParams['mathtext.default'] = 'rm'
+rcParams['xtick.major.size'] = 4
+rcParams['xtick.major.width'] = 1
+rcParams['ytick.major.size'] = 4
+rcParams['ytick.major.width'] = 1
+rcParams['axes.grid'] = False
+rcParams['axes.linewidth'] = 1
+rcParams['grid.linewidth'] = .75
+rcParams['grid.linestyle'] = '-'
+rcParams['grid.alpha'] = .15
+rcParams['savefig.dpi'] = DPI
+
 	
+def valve(
+	figsize = (1,1),
+	radius = 0.2,
+	lw = 5,
+	color = 'k',
+	alpha = 0.5,
+	name = 'valve'
+	):
+
+	fig = figure(figsize = figsize)
+	ax = axes((0, 0, 1, 1), frameon = False)
+
+	l = array([-1, 1]) * radius / sqrt(2)
+	plot( l, l, '-', color = color, solid_capstyle = 'butt', lw = lw)
+
+	ax.add_artist(
+		Ellipse(
+			xy = (0, 0),
+			width = 2*radius,
+			height = 2*radius,
+			ec = color,
+			fc = 'w',
+			lw = lw,
+			)
+		)
+
+	axis([-figsize[0]/2, figsize[0]/2, -figsize[1]/2, figsize[1]/2])
+	xticks([])
+	yticks([])
+	savefig(f'{name}_closed.png', dpi = DPI, facecolor = 'None')
+	close(fig)
+
+	fig = figure(figsize = figsize)
+	ax = axes((0, 0, 1, 1), frameon = False)
+
+	ax.add_artist(
+		Ellipse(
+			xy = (0, 0),
+			width = 2*radius,
+			height = 2*radius,
+			ec = color,
+			fc = 'none',
+			lw = lw,
+			alpha = .25,
+			)
+		)
+
+	axis([-figsize[0]/2, figsize[0]/2, -figsize[1]/2, figsize[1]/2])
+	xticks([])
+	yticks([])
+	savefig(f'{name}_open.png', dpi = DPI, facecolor = 'None')
+	close(fig)
+
+
+def trap(
+	w = 1,
+	h = 1,
+	radius = 0.2,
+	fc = (1,1,1,1),
+	ec = 'k',
+	lw = 2,
+	name = 'trap',
+	tube = '',
+	tube_lw = 4,
+	tube_color = 'k',
+	):
+
+	## clockwise from the top:
+	circle = array([ [sin(a/360*2*pi), cos(a/360*2*pi)] for a in arange(361)])
+
+	#draw box:
+	xy = vstack((
+			circle[:91]*radius + array([[w/2-radius, h/2-radius]]),
+			array([
+				[w/2, -h/2],
+				[-w/2, -h/2],
+				]),
+			circle[270:]*radius + array([[-w/2+radius, h/2-radius]]),
+			))
+			
+
+	fig = figure(figsize = (w+1,h+1))
+	ax = axes((0, 0, 1, 1), frameon = False)
+	ax.add_patch(
+		Polygon(
+			xy = xy,
+			closed = True,
+			ec = ec,
+			fc = fc,
+			lw = lw,
+			)
+		)
+	if tube == 'L':
+		plot([0,0,w/2], [h/2,0,0], '-', color = tube_color, lw = tube_lw, solid_capstyle = 'butt', solid_joinstyle = 'round')
+	elif tube == 'I':
+		plot([0,0,0], [h/2,0,h/2], '-', color = tube_color, lw = tube_lw, solid_capstyle = 'butt', solid_joinstyle = 'round')
+	axis([-(w+1)/2, (w+1)/2, -(h+1)/2, (h+1)/2])
+	xticks([])
+	yticks([])
+	savefig(f'{name}.png', dpi = DPI, facecolor = 'None')
+	close(fig)
+
+def gauge(
+	w = 1,
+	h = .6,
+	radius = 0.2,
+	fc = (1,1,1,1),
+	ec = 'k',
+	lw = 2,
+	name = 'gauge',
+	):
+
+	## clockwise from the top:
+	circle = array([ [sin(a/360*2*pi), cos(a/360*2*pi)] for a in arange(361)])
+
+	#draw box:
+	xy = vstack((
+			circle[:91]*radius + array([[w/2-radius, h/2-radius]]),
+			circle[90:181]*radius + array([[w/2-radius, -h/2+radius]]),
+			circle[180:271]*radius + array([[-w/2+radius, -h/2+radius]]),
+			circle[270:]*radius + array([[-w/2+radius, h/2-radius]]),
+			))
+			
+
+	fig = figure(figsize = (w+1,h+1))
+	ax = axes((0, 0, 1, 1), frameon = False)
+	ax.add_patch(
+		Polygon(
+			xy = xy,
+			closed = True,
+			ec = ec,
+			fc = fc,
+			lw = lw,
+			)
+		)
+	axis([-(w+1)/2, (w+1)/2, -(h+1)/2, (h+1)/2])
+	xticks([])
+	yticks([])
+	savefig(f'{name}.png', dpi = DPI, facecolor = 'None')
+	close(fig)
+
+def thermostat(
+	w = 1,
+	h = .5,
+	radius = 0.2,
+	fc = (1,1,1,1),
+	ec = 'k',
+	lw = 2,
+	name = 'thermostat',
+	):
+
+	## clockwise from the top:
+	circle = array([ [sin(a/360*2*pi), cos(a/360*2*pi)] for a in arange(361)])
+
+	#draw box:
+	xy = vstack((
+			array([
+				[-w/2, h/2],
+				[w/2, h/2],
+				]),
+			circle[90:181]*radius + array([[w/2-radius, -h/2+radius]]),
+			circle[180:271]*radius + array([[-w/2+radius, -h/2+radius]]),
+			))
+
+	fig = figure(figsize = (w+1,h+1))
+	ax = axes((0, 0, 1, 1), frameon = False)
+	ax.add_patch(
+		Polygon(
+			xy = xy,
+			closed = True,
+			ec = ec,
+			fc = fc,
+			lw = lw,
+			)
+		)
+	axis([-(w+1)/2, (w+1)/2, -(h+1)/2, (h+1)/2])
+	xticks([])
+	yticks([])
+	savefig(f'{name}.png', dpi = DPI, facecolor = 'None')
+	close(fig)
+
+def button(
+	w = .3,
+	h = .3,
+	fc = (1,1,1,1),
+	ec = 'k',
+	lw = 2,
+	name = 'button',
+	symbol = '',
+	symbol_size = .2,
+	symbol_dx = 0.,
+	symbol_dy = 0.,
+	symbol_lw = 2,
+	symbol_color = 'k',
+	):
+
+	#draw box:
+	xy = array([
+		[w/2, h/2],
+		[w/2, -h/2],
+		[-w/2, -h/2],
+		[-w/2, h/2],
+		])			
+
+	fig = figure(figsize = (w+1,h+1))
+	ax = axes((0, 0, 1, 1), frameon = False)
+	ax.add_patch(
+		Polygon(
+			xy = xy,
+			closed = True,
+			ec = ec,
+			fc = fc,
+			lw = lw,
+			)
+		)
+	if symbol == 'snowflake':
+		text(0 + symbol_dx, 0 + symbol_dy, '❄︎'[:-1], family = 'Menlo', size = symbol_size, ha = 'center', va = 'center')
+	elif symbol == 'hot':
+		text(0 + symbol_dx, 0 + symbol_dy, '≈', family = 'Menlo', size = symbol_size, ha = 'center', va = 'center', rotation = 90)
+	axis([-(w+1)/2, (w+1)/2, -(h+1)/2, (h+1)/2])
+	xticks([])
+	yticks([])
+	savefig(f'{name}.png', dpi = DPI, facecolor = 'None')
+	close(fig)
+
+if __name__ == '__main__':
+
+	for symbol, symbol_size, symbol_dx, symbol_dy, fc, color in [
+		('hot', 24, 0.01, 0.016, (1,.75,0,1), 'orange'),
+		('hot', 24, 0.01, 0.016, (1,1,1,1), 'white'),
+		('snowflake', 24, 0, -0.021, (0,1,1,1), 'cyan'),
+		('snowflake', 24, 0, -0.021, (1,1,1,1), 'white'),
+		('snowflake', 16, 0, -0.018, (.9,.75,1,1), 'magenta'),
+		('snowflake', 16, 0, -0.018, (1,1,1,1), 'white'),
+		]:
+		button(fc = fc, symbol = symbol, symbol_dx = symbol_dx, symbol_dy = symbol_dy, symbol_size = symbol_size, name = f'button_{symbol}_{symbol_size}_{color}')
+
+	for fc, name in [
+			('w', 'white'),
+			((1,.75,0,1), 'orange'),
+			((0,1,1,1), 'cyan'),
+			((.3,.9,1,1), 'lightblue'),
+			((.9,.75,1,1), 'magenta'),
+			((1,.9,.4,1), 'yellow'),
+			]:
+		thermostat(fc = fc, name = f'thermostat_{name}')
+		gauge(fc = fc, name = f'gauge_{name}')
+		for tube in 'LI':
+			trap(tube = tube, fc = fc, name = f'trap_{tube}_{name}')
+
+	valve()
+
+
+
+
+
+
+
+
+
+
+
+exit()
 
 def needle_display(
 	x = 0,
@@ -70,8 +354,8 @@ X, Y = zip(*[
 plot(X, Y, **tube_kwargs)
 
 X, Y = zip(*[
-	(-270, -100),
-	(-270, -60),
+	(-300, -100),
+	(-300, -60),
 	])
 plot(X, Y, **tube_kwargs)
 
@@ -401,7 +685,7 @@ for color, name in [
 	((.25,1,0), 'green'),
 	((1,1,.67), 'yellow'),
 	]:
-	h, w = .85, .85
+	h, w = .75, .75
 	Ncurve = 180
 	fig = figure(figsize = (4,1))
 	ax = axes((0, 0, 1, 1), frameon = False)

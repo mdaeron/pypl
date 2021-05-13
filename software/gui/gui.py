@@ -5,7 +5,8 @@ from pyglet.window import mouse
 from pathlib import Path
 from colorama import Fore, Style
 from collections import defaultdict
-
+from numpy import log10, floor
+from scipy.interpolate import interp1d
 pyglet.resource.path = ['img']
 pyglet.resource.reindex()
 
@@ -61,7 +62,7 @@ class PyPL_GUI():
 			if button == mouse.LEFT:
 				for w in self.population[::-1]:
 					if w.in_active_area(x, y):
-						w.activate()
+						w._activate(w)
 						break
 
 	def start_prep(self, subdir = 'preplogs', prefix = 'carousel_'):
@@ -173,11 +174,14 @@ class PyPL_GUI():
 		pyglet.clock.unschedule(self.other_log)
 		self.current_other_log = None
 
-	
+
+
+
 class Widget():
 	
 	def __init__(self):
 		self.visible = True
+		self._refresh = lambda x: None
 
 	def in_active_area(self, x, y):
 		if self.visible and 'active_area_type' in dir(self):
@@ -191,6 +195,107 @@ class Widget():
 					and (y - self.y) < self.active_area_rectangle[3]
 					)
 		return False
+
+	def refresh(self, fun):
+		self._refresh = fun
+
+	def activate(self, fun):
+		self._activate = fun
+
+class TextWidget(Widget):
+	def __init__(self,
+		pypl_instance,
+		x, y,
+		font_name = 'Menlo',
+		font_size = 24,
+		anchor_x = 'center',
+		anchor_y = 'center',
+		align = 'center',
+		color = (0, 0, 0, 255),
+		):
+		Widget.__init__(self)
+		self.parent = pypl_instance
+		self.x = x + (self.parent.window.width) // 2
+		self.y = y + (self.parent.window.height) // 2
+
+		self.label = pyglet.text.Label(
+			'',
+			font_name = font_name,
+			font_size = font_size,
+			color = color,
+			x = self.x,
+			y = self.y,
+			anchor_x = anchor_x,
+			anchor_y = anchor_y,
+			multiline = True,
+			align = align,
+			width = 1000,
+			)
+		self.parent.population.append(self)
+
+	def draw(self):
+		self._refresh(self)
+		self.label.draw()
+
+class IconWidget(Widget):
+	
+	def __init__(self,
+		pypl_instance,
+		x, y,
+		icon = '',
+		):
+
+		Widget.__init__(self)
+		self.parent = pypl_instance
+		self.x = x + (self.parent.window.width) // 2
+		self.y = y + (self.parent.window.height) // 2
+		self.icon = pyglet.resource.image(icon)
+
+		self.width = self.icon.width
+		self.height = self.icon.height
+		self.icon.anchor_x = self.width // 2
+		self.icon.anchor_y = self.height // 2
+		self.sprite = pyglet.sprite.Sprite(self.icon, self.x, self.y)
+		self.parent.population.append(self)
+
+	def draw(self):
+		self._refresh(self)
+		self.sprite.draw()
+
+class ToggleWidget(Widget):
+	
+	def __init__(self,
+		pypl_instance,
+		x, y,
+		icon_on = '',
+		icon_off = '',
+		state = False,
+		):
+
+		Widget.__init__(self)
+		self.parent = pypl_instance
+		self.x = x + (self.parent.window.width) // 2
+		self.y = y + (self.parent.window.height) // 2
+		self.icon_on = pyglet.resource.image(icon_on)
+		self.icon_off = pyglet.resource.image(icon_off)
+		self.state = state
+
+		self.width = self.icon_on.width
+		self.height = self.icon_on.height
+		self.icon_on.anchor_x = self.width // 2
+		self.icon_on.anchor_y = self.height // 2
+		self.icon_off.anchor_x = self.width // 2
+		self.icon_off.anchor_y = self.height // 2
+		self.sprite_on = pyglet.sprite.Sprite(self.icon_on, self.x, self.y)
+		self.sprite_off = pyglet.sprite.Sprite(self.icon_off, self.x, self.y)
+		self.parent.population.append(self)
+
+	def draw(self):
+		self._refresh(self)
+		if self.state:
+			self.sprite_on.draw()
+		else:
+			self.sprite_off.draw()
 
 
 class Text_Widget(Widget):
@@ -255,11 +360,13 @@ class Icon_Widget(Widget):
 		angle_max = 0,
 		alpha_min = 1,
 		alpha_max = 1,
+		scale = 'lin',
 		):
 
 		Widget.__init__(self)
 		self.uid = uid
 		self.avg = avg
+		self.scale = scale
 		self.parent = pypl_instance
 		self.state = [0]*self.avg
 		self.x = x + (self.parent.window.width) // 2
@@ -279,7 +386,7 @@ class Icon_Widget(Widget):
 		self.parent.population.append(self)
 		
 	def _angle(self, x):
-		return max(min(self.A * x + self.B, self.angle_max), self.angle_min)
+			return max(min(self.A * x + self.B, self.angle_max), self.angle_min)
 
 	def _alpha(self, x):
 		return max(min(self.C * x + self.D, self.alpha_max), self.alpha_min)
@@ -291,8 +398,12 @@ class Icon_Widget(Widget):
 			self.sprite.opacity = (self._alpha(sum(self.state) / self.avg))*255
 		else:
 			self.state = self.parent.state[self.uid]
-			self.sprite.rotation = self._angle(self.state)
-			self.sprite.opacity = self._alpha(self.state)*255
+			if self.scale == 'log':
+				self.sprite.rotation = self._angle(log10(self.state))
+				self.sprite.opacity = self._alpha(log10(self.state))*255
+			else:
+				self.sprite.rotation = self._angle(self.state)
+				self.sprite.opacity = self._alpha(self.state)*255
 		self.sprite.draw()
 
 
@@ -477,42 +588,177 @@ class Sender_Widget(Widget):
 	def activate(self):
 		self.parent.send(f'{self.instruction}\r')
 
-	
+def Valve(UI, name, x, y):
+	V = ToggleWidget(UI, x, y, 'valve_open.png', 'valve_closed.png')
+	V.name = name[:]
+	V.active_area_type = 'circle'
+	V.active_area_radius = V.width // 2
+	@V.refresh
+	def foo(self):
+		self.state = self.parent.state[self.name]
+	@V.activate
+	def foo(self):
+		self.parent.send(f'toggle;{self.name}\r')
+	return V
+
+def Trap(UI, name, T, x, y, Tlimits = [-170, -90, -70, 0, 30, 40]):
+	T_Background = IconWidget(UI, x, y, icon = 'trap_L_white.png')
+	T_BakeColor = IconWidget(UI, x, y, icon = 'trap_L_orange.png')
+	T_ThawColor = IconWidget(UI, x, y, icon = 'trap_L_magenta.png')
+	T_FreezeColor = IconWidget(UI, x, y, icon = 'trap_L_cyan.png')
+
+	alpha_bake = interp1d([-1e3, Tlimits[-2], Tlimits[-1], 1e3], [0,0,255,255])
+	alpha_thaw = interp1d([-1e3, Tlimits[0], Tlimits[1], Tlimits[2], Tlimits[3], 1e3], [0,0,255,255,0,0])
+	alpha_freeze = interp1d([-1e3, Tlimits[0], Tlimits[1], 1e3], [255,255,0,0])
+
+	@T_BakeColor.refresh
+	def foo(self):
+		self.sprite.opacity = int(alpha_bake(self.parent.state[T]))
+
+	@T_ThawColor.refresh
+	def foo(self):
+		self.sprite.opacity = int(alpha_thaw(self.parent.state[T]))
+
+	@T_FreezeColor.refresh
+	def foo(self):
+		self.sprite.opacity = int(alpha_freeze(self.parent.state[T]))
+
+	T_Text = TextWidget(UI, x, y-30, font_name = 'Helvetica', font_size = 14, color = (0,0,0,255))
+	@T_Text.refresh
+	def foo(self):
+		self.label.text = '%+.0f °C' % self.parent.state[T]
+
+def Gauge(UI, name, P, x, y):
+	P_Background = IconWidget(UI,x, y, icon = 'gauge_white.png')
+	P_Color = IconWidget(UI, x, y, icon = 'gauge_yellow.png')
+	@P_Color.refresh
+	def foo(self):
+		self.parent.state[P] = 0.02733
+		self.sprite.opacity = int((min(3, max(-5, log10(self.parent.state[P])))+5)/8*255)
+
+	P_Text = TextWidget(UI, x, y, font_name = 'Helvetica', font_size = 14, color = (0,0,0,255))
+	@P_Text.refresh
+	def foo(self):
+		x = self.parent.state[P]
+		y = int(floor(log10(x)))
+		if y > -2:
+			n = 3-y
+			self.label.text = f'{x:.{n}f}\nmbar'
+# 			self.label.text = f'{x:g}\nmbar'
+		else:
+			self.label.text = f'{x:.5f}\nmbar'
+# 			z = x / 10**y
+# 			n = min(y + 5, 3)
+# 			self.label.text = f'{z:.{n}f} e{y}\nmbar'
+
 if __name__ == '__main__':
 	
 	UI = PyPL_GUI()
 
-# 	Text_Widget(UI, -280, 220, 'x', font_size = 18, fmtstr = 'x = {:.2f}')
-# 	Icon_Widget(UI, -280, 100, 'x', x_min = -1, x_max = 1, angle_min = -45, angle_max = 45)
-# 	Text_Widget(UI, 0, 220, 'y', font_size = 18, fmtstr = 'y = {:.2f}')
-# 	Icon_Widget(UI, 0, 100, 'y', x_min = -1, x_max = 1, angle_min = -45, angle_max = 45)
-# 	Text_Widget(UI, 280, 220, 'z', font_size = 18, fmtstr = 'z = {:.2f}')
-# 	Icon_Widget(UI, 280, 100, 'z', x_min = -1, x_max = 1, angle_min = -45, angle_max = 45)
+	TS1_freeze_button_Background = IconWidget(UI,-35, 130, icon = 'button_snowflake_24_white.png')
+	TS1_freeze_button_Background.active_area_type = 'rectangle'
+	TS1_freeze_button_Background.active_area_rectangle = [-15, 15, -15, 15]
+	@TS1_freeze_button_Background.activate
+	def foo(self):
+		if self.parent.state['TS1'] == -200:
+			self.parent.send(f'stop;thermostat_1\r')
+		else:
+			self.parent.send('start_thermostat;thermostat_1;-200\r')
+	TS1_freeze_button_Color = IconWidget(UI, -35, 130, icon = 'button_snowflake_24_cyan.png')
+	@TS1_freeze_button_Color.refresh
+	def foo(self):
+		if self.parent.state['TS1'] is None or self.parent.state['TS1'] > -100:
+			self.sprite.opacity = 0
+		else:
+			self.sprite.opacity = 255 if self.parent.state['cPWM1'] else 127
 
-	Icon_Widget(UI, 0, 0, 'T3', alpha_min = 1, alpha_max = 1, icon = 'tepid_box.png')
-	Icon_Widget(UI, 0, 0, 'T3', x_min = 25.2, x_max = 27, alpha_min = 0, alpha_max = 1, icon = 'hot_box.png')
-	Icon_Widget(UI, 0, 0, 'T3', x_min = 24.8, x_max = 23, alpha_min = 0, alpha_max = 1, icon = 'cold_box.png')
+	TS1_thaw_button_Background = IconWidget(UI,0, 130, icon = 'button_snowflake_16_white.png')
+	TS1_thaw_button_Background.active_area_type = 'rectangle'
+	TS1_thaw_button_Background.active_area_rectangle = [-15, 15, -15, 15]
+	@TS1_thaw_button_Background.activate
+	def foo(self):
+		if self.parent.state['TS1'] == -80:
+			self.parent.send(f'stop;thermostat_1\r')
+		else:
+			self.parent.send('start_thermostat;thermostat_1;-80\r')
+	TS1_thaw_button_Color = IconWidget(UI, 0, 130, icon = 'button_snowflake_16_magenta.png')
+	@TS1_thaw_button_Color.refresh
+	def foo(self):
+		if self.parent.state['TS1'] is None or self.parent.state['TS1'] < -100 or self.parent.state['TS1'] > 0:
+			self.sprite.opacity = 0
+		else:
+			self.sprite.opacity = 255 if self.parent.state['cPWM1'] else 127
 
-	Text_Widget(UI, 0, 300, 'P1', font_size = 18, fmtstr = 'P1 = {:.4e}')
-# 	Text_Widget(UI, 0, 260, 'T2', font_size = 18, fmtstr = 'PT1000 = {:.2f} °C')
-	Text_Widget(UI, 0, 220, 'T3', font_size = 18, fmtstr = 'ThK = {:.2f} °C')
-# 	Icon_Widget(UI, 0, 100, 'T1', x_min = 19, x_max = 23, angle_min = -45, angle_max = 45)
+	TS1_bake_button_Background = IconWidget(UI,35, 130, icon = 'button_hot_24_white.png')
+	TS1_bake_button_Background.active_area_type = 'rectangle'
+	TS1_bake_button_Background.active_area_rectangle = [-15, 15, -15, 15]
+	@TS1_bake_button_Background.activate
+	def foo(self):
+		if self.parent.state['TS1'] == 50:
+			self.parent.send(f'stop;thermostat_1\r')
+		else:
+			self.parent.send('start_thermostat;thermostat_1;50\r')
+		
+	TS1_bake_button_Color = IconWidget(UI, 35, 130, icon = 'button_hot_24_orange.png')
+	@TS1_bake_button_Color.refresh
+	def foo(self):
+		if self.parent.state['TS1'] is None or self.parent.state['TS1'] < 20:
+			self.sprite.opacity = 0
+		else:
+			self.sprite.opacity = 255 if self.parent.state['hPWM1'] else 127
 
-	Toggle_Widget(UI, -200, -150, 'V1')
-	Text_Widget  (UI, -200,  -60, 'V1', font_size = 14, fmtstr = 'V1 = {!s}')
-	Toggle_Widget(UI,    0, -150, 'V2')
-	Text_Widget  (UI,    0,  -60, 'V2', font_size = 14, fmtstr = 'V2 = {!s}')
-	Toggle_Widget(UI,  200, -150, 'V3')
-	Text_Widget  (UI,  200,  -60, 'V3', font_size = 14, fmtstr = 'V3 = {!s}')
 
-	Command_Widget(UI,  0, 100, f_start = UI.start_other_log, f_stop = UI.stop_other_log)
+	TS1_Text = TextWidget(UI, 0, 100, font_name = 'Helvetica', font_size = 10, color = (0,0,0,255))
+	@TS1_Text.refresh
+	def foo(self):
+		self.label.text = '' if self.parent.state['TS1'] is None else 'Target: %+g °C' % self.parent.state['TS1']
 
-	Dialog_Widget(UI, 0, -300, 'start_blink_dialog', 'button_start.png', instruction = 'start_blink')
-	Dialog_Widget(UI, 0, -300, 'stop_blink_dialog', 'button_stop.png', instruction = 'stop_blink')
-	Dialog_Widget(UI, 0,   50, 'confirm_stop_blink_dialog', 'button_abort.png', instruction = 'confirm_stop_blink')
-	Dialog_Widget(UI, 0,  -50, 'undo_stop_blink_dialog', 'button_undo.png', instruction = 'undo_stop_blink')
-	
-	Sender_Widget(UI, 100, -300, 'button_fwd.png', 'stepper;fwd')
-	Sender_Widget(UI, -100, -300, 'button_bwd.png', 'stepper;bwd')
+	gauges = {name: Gauge(UI, name, P, x, y) for name, P, x, y in [
+		('Gauge_1', 'P1', -270, -30),
+		]}
+
+	traps = {name: Trap(UI, name, T, x, y, Tlimits = [22, 24, 26, 28, 30, 40]) for name, T, x, y in [
+		('Trap_A', 'T3', -400, -100),
+		('Trap_B', 'T1', 0, 200),
+		]}
+
+	valves = {v: Valve(UI, v, x, y) for v, x, y in [
+		('V1', -450, 200),
+		('V2', -350, 200),
+		('V3', -400, 250),
+		('V4', -200, -100),
+		]}
+
+# 	Icon_Widget(UI, -300, -80, 'P1', x_min = -5, x_max = 3, angle_min = -45, angle_max = 45, scale = 'log', icon = 'needle_line.png')
+# 
+# 	Icon_Widget(UI, -400, -100, 'T3', alpha_min = 1, alpha_max = 1, icon = 'tepid_box.png')
+# 	Icon_Widget(UI, -400, -100, 'T3', x_min = 25.2, x_max = 27, alpha_min = 0, alpha_max = 1, icon = 'hot_box.png')
+# 	Icon_Widget(UI, -400, -100, 'T3', x_min = 24.8, x_max = 23, alpha_min = 0, alpha_max = 1, icon = 'cold_box.png')
+# 
+# # 	Text_Widget(UI, 0, 300, 'P1', font_size = 18, fmtstr = 'P1 = {:.4e}')
+# # 	Text_Widget(UI, 0, 260, 'T2', font_size = 18, fmtstr = 'PT1000 = {:.2f} °C')
+# 	Text_Widget(UI, -400, -150, 'T3', font_size = 10, fmtstr = '{:+.0f} °C')
+# 	Text_Widget(UI, -300, 0, 'P1', font_size = 10, fmtstr = '{:g} mbar')
+# # 	Icon_Widget(UI, 0, 100, 'T1', x_min = 19, x_max = 23, angle_min = -45, angle_max = 45)
+# 
+# 	Toggle_Widget(UI, -450, 200, 'V1')
+# 	Toggle_Widget(UI, -350, 200, 'V2')
+# 	Toggle_Widget(UI, -400, 250, 'V3')
+# 	Toggle_Widget(UI, -200, -100, 'V4')
+# 	Text_Widget  (UI, -200,  -60, 'V1', font_size = 14, fmtstr = 'V1 = {!s}')
+# 	Toggle_Widget(UI,    0, -150, 'V2')
+# 	Text_Widget  (UI,    0,  -60, 'V2', font_size = 14, fmtstr = 'V2 = {!s}')
+# 	Toggle_Widget(UI,  200, -150, 'V3')
+# 	Text_Widget  (UI,  200,  -60, 'V3', font_size = 14, fmtstr = 'V3 = {!s}')
+# 
+# 	Command_Widget(UI,  0, 100, f_start = UI.start_other_log, f_stop = UI.stop_other_log)
+# 
+# 	Dialog_Widget(UI, 0, -300, 'start_blink_dialog', 'button_start.png', instruction = 'start_blink')
+# 	Dialog_Widget(UI, 0, -300, 'stop_blink_dialog', 'button_stop.png', instruction = 'stop_blink')
+# 	Dialog_Widget(UI, 0,   50, 'confirm_stop_blink_dialog', 'button_abort.png', instruction = 'confirm_stop_blink')
+# 	Dialog_Widget(UI, 0,  -50, 'undo_stop_blink_dialog', 'button_undo.png', instruction = 'undo_stop_blink')
+# 	
+# 	Sender_Widget(UI, 100, -300, 'button_fwd.png', 'stepper;fwd')
+# 	Sender_Widget(UI, -100, -300, 'button_bwd.png', 'stepper;bwd')
 
 	UI.start()

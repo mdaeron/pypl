@@ -7,7 +7,7 @@ from max31856 import MAX31856
 from mcp23017 import MCP23017
 from timing import timing
 from stepper import Stepper
-from pwm import _PWM
+from thermostat import _PWM, Thermostat, PID
 from heartbeat import Heartbeat
 
 class Valve():
@@ -56,6 +56,7 @@ class PyPL():
 		self.task_blink = None
 		self.rtc = pyb.RTC()
 		self.accel = pyb.Accel()
+		self.SOS = 'OK'
 
 
 		self.stepper = Stepper()
@@ -77,9 +78,9 @@ class PyPL():
 		self.V4 = Valve(DummySensor())
 
 		self.P1 = MKSGauge(6)
-		self.P2 = MKSGauge(4)
-		self.P3 = MKSGauge(1)
-		self.P4 = MKSGauge(2)
+# 		self.P2 = MKSGauge(4)
+# 		self.P3 = MKSGauge(1)
+# 		self.P4 = MKSGauge(2)
 
 		try:
 			self.i2c = machine.I2C(2)
@@ -88,7 +89,7 @@ class PyPL():
 			self.gpio.gpio = 0x0000 # set all pins to low
 
 			self.V1 = Valve(self.gpio[0])
-			self.V1 = Valve(self.gpio[2])
+			self.V1 = Valve(self.gpio[1])
 			self.V3 = Valve(self.gpio[2])
 			self.V4 = Valve(self.gpio[3])
 		except OSError:
@@ -98,7 +99,25 @@ class PyPL():
 
 
 		self.spi = pyb.SPI(2, mode = pyb.SPI.MASTER, baudrate = 10**7, phase = 1)
+		self.T1 = MAX31856(self.spi, pyb.Pin('X17', pyb.Pin.OUT))
 		self.T3 = MAX31856(self.spi, pyb.Pin('X6', pyb.Pin.OUT))
+
+		self.hot_pwm_1 = _PWM('Y12')
+		self.cold_pwm_1 = _PWM('Y11')
+
+		self.hot_pid_1 = PID(
+			self.T1.T,
+			self.hot_pwm_1.output,
+			set_point = 40,
+			Kp = 1., Ki = 0.03, Kd = 0., I_min = -6, I_max = 6, cycle = 1)
+
+		self.cold_pid_1 = PID(
+			self.T1.T,
+			self.cold_pwm_1.output,
+			set_point = -80,
+			Kp = 1., Ki = 0.03, Kd = 0., I_min = -6, I_max = 6, cycle = 1, invert = True)
+
+		self.thermostat_1 = Thermostat(self.hot_pid_1, self.cold_pid_1)
 		
 		self.start_blink_dialog = 1
 		self.stop_blink_dialog = 0
@@ -143,7 +162,7 @@ class PyPL():
 			+ self.sep2 + ('P2=n' if self.P2.P is None else ('P2=f%.4e' % self.P2.P))
 			+ self.sep2 + ('P3=n' if self.P3.P is None else ('P3=f%.4e' % self.P3.P))
 			+ self.sep2 + ('P4=n' if self.P4.P is None else ('P4=f%.4e' % self.P4.P))
-			+ self.sep2 + ('T1=n' if self.T1.T is None else ('T1=f%.2f' % self.T1.T))
+			+ self.sep2 + ('T1=n' if self.T1.T() is None else ('T1=f%.2f' % self.T1.T()))
 			+ self.sep2 + ('T2=n' if self.T2.T is None else ('T2=f%.2f' % self.T2.T))
 			+ self.sep2 + ('T3=n' if self.T3.T() is None else ('T3=f%.2f' % self.T3.T()))
 			+ self.sep2 + ('T4=n' if self.T4.T is None else ('T4=f%.2f' % self.T4.T))
@@ -151,11 +170,15 @@ class PyPL():
 			+ self.sep2 + 'V2=b%s' % self.V2.state()
 			+ self.sep2 + 'V3=b%s' % self.V3.state()
 			+ self.sep2 + 'V4=b%s' % self.V4.state()
-			+ self.sep2 + 'start_blink_dialog=b%s' % self.start_blink_dialog
-			+ self.sep2 + 'stop_blink_dialog=b%s' % self.stop_blink_dialog
-			+ self.sep2 + 'confirm_stop_blink_dialog=b%s' % self.confirm_stop_blink_dialog
-			+ self.sep2 + 'undo_stop_blink_dialog=b%s' % self.undo_stop_blink_dialog
+			+ self.sep2 + ('TS1=n' if self.thermostat_1.target is None else ('TS1=f%.0f' % self.thermostat_1.target))
+			+ self.sep2 + 'hPWM1=b%s' % self.hot_pwm_1.state()
+			+ self.sep2 + 'cPWM1=b%s' % self.cold_pwm_1.state()
+# 			+ self.sep2 + 'start_blink_dialog=b%s' % self.start_blink_dialog
+# 			+ self.sep2 + 'stop_blink_dialog=b%s' % self.stop_blink_dialog
+# 			+ self.sep2 + 'confirm_stop_blink_dialog=b%s' % self.confirm_stop_blink_dialog
+# 			+ self.sep2 + 'undo_stop_blink_dialog=b%s' % self.undo_stop_blink_dialog
 # 			+ self.sep2 + 'DEBUG=s%s' % repr(self.rbuf)
+# 			+ self.sep2 + 'SOS=s%s' % self.SOS
 			)
 
 	async def status_loop(self):
@@ -191,6 +214,8 @@ class PyPL():
 					self.__dict__[i[1]].close()
 				elif i[0] == 'start':
 					self.__dict__[i[1]].start()
+				elif i[0] == 'start_thermostat':
+					self.__dict__[i[1]].start(float(i[2]))
 				elif i[0] == 'stop':
 					self.__dict__[i[1]].stop()
 				elif i[0] == 'start_blink':
@@ -262,5 +287,5 @@ class PyPL():
 
 if __name__ == '__main__':
 
-	P = PyPL()	
-	P.start()
+	pypl = PyPL()	
+	pypl.start()
