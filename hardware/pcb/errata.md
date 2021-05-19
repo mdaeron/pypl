@@ -1,0 +1,1 @@
+* PWM relays "X7" and "X8" are mislabeled as "Y7" and "Y8".

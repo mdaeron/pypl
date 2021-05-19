@@ -5,10 +5,20 @@ from pyglet.window import mouse
 from pathlib import Path
 from colorama import Fore, Style
 from collections import defaultdict
-from numpy import log10, floor
+from numpy import log10, floor, cos, sin, pi
 from scipy.interpolate import interp1d
 pyglet.resource.path = ['img']
 pyglet.resource.reindex()
+
+from build_gui_elements import (
+	INLET_CROSS_X, INLET_CROSS_Y,
+	TRAP_A_X, TRAP_A_Y,
+	GAUGE_A_X, GAUGE_A_Y,
+	TRAP_B_X, TRAP_B_Y,
+	GAUGE_B_X, GAUGE_B_Y,
+	TRAP_C_X, TRAP_C_Y,
+	VACUUM_X, VACUUM_Y,
+	)
 
 class DummyBoard():
 	def __init__(self):
@@ -158,7 +168,7 @@ class PyPL_GUI():
 
 	def set_rtc(self):
 		now = arrow.now()
-		self.send(f'set_rtc;%s;%d;%s' % (now.format('YYYY;MM;DD'), (now.weekday() - 1) % 7 + 1, now.format('HH;mm;ss;255\r')))
+		self.send('@pypl.set_rtc((%s,%d,%s))\r' % (now.format('YYYY,MM,DD'), (now.weekday() - 1) % 7 + 1, now.format('HH,mm,ss,255')))
 
 	def start(self):
 		self.set_rtc()
@@ -206,8 +216,10 @@ class TextWidget(Widget):
 	def __init__(self,
 		pypl_instance,
 		x, y,
+		label = '',
 		font_name = 'Menlo',
 		font_size = 24,
+		bold = False,
 		anchor_x = 'center',
 		anchor_y = 'center',
 		align = 'center',
@@ -219,9 +231,10 @@ class TextWidget(Widget):
 		self.y = y + (self.parent.window.height) // 2
 
 		self.label = pyglet.text.Label(
-			'',
+			label,
 			font_name = font_name,
 			font_size = font_size,
+			bold = bold,
 			color = color,
 			x = self.x,
 			y = self.y,
@@ -588,24 +601,33 @@ class Sender_Widget(Widget):
 	def activate(self):
 		self.parent.send(f'{self.instruction}\r')
 
-def Valve(UI, name, x, y):
+def Valve(UI, name, x, y, label = None, label_pos = '-90'):
+	if label is None:
+		label = name[1:]
 	V = ToggleWidget(UI, x, y, 'valve_open.png', 'valve_closed.png')
 	V.name = name[:]
 	V.active_area_type = 'circle'
 	V.active_area_radius = V.width // 2
 	@V.refresh
-	def foo(self):
+	def valve_refresh(self):
 		self.state = self.parent.state[self.name]
 	@V.activate
-	def foo(self):
-		self.parent.send(f'toggle;{self.name}\r')
+	def valve_activate(self):
+		self.parent.send(f'@pypl.{self.name}.toggle()\r')	
+	TextWidget(UI, x+40*cos(label_pos/180*pi), y+40*sin(label_pos/180*pi), font_name = 'Helvetica', font_size = 14, color = (153,153,153,255), label = label, bold = True)
 	return V
 
-def Trap(UI, name, T, x, y, Tlimits = [-170, -90, -70, 0, 30, 40]):
-	T_Background = IconWidget(UI, x, y, icon = 'trap_L_white.png')
-	T_BakeColor = IconWidget(UI, x, y, icon = 'trap_L_orange.png')
-	T_ThawColor = IconWidget(UI, x, y, icon = 'trap_L_magenta.png')
-	T_FreezeColor = IconWidget(UI, x, y, icon = 'trap_L_cyan.png')
+def Trap(UI, name, i, x, y, Tlimits = [-170, -90, -70, 0, 30, 40], shape = 'L', label = None):
+	if label is None:
+		label = name[-1]
+	T = f'T{i}'
+	TS = f'TS{i}'
+	cPWM = f'cPWM{i}'
+	hPWM = f'hPWM{i}'
+	T_Background = IconWidget(UI, x, y, icon = f'trap_{shape}_white.png')
+	T_BakeColor = IconWidget(UI, x, y, icon = f'trap_{shape}_orange.png')
+	T_ThawColor = IconWidget(UI, x, y, icon = f'trap_{shape}_magenta.png')
+	T_FreezeColor = IconWidget(UI, x, y, icon = f'trap_{shape}_cyan.png')
 
 	alpha_bake = interp1d([-1e3, Tlimits[-2], Tlimits[-1], 1e3], [0,0,255,255])
 	alpha_thaw = interp1d([-1e3, Tlimits[0], Tlimits[1], Tlimits[2], Tlimits[3], 1e3], [0,0,255,255,0,0])
@@ -628,106 +650,125 @@ def Trap(UI, name, T, x, y, Tlimits = [-170, -90, -70, 0, 30, 40]):
 	def foo(self):
 		self.label.text = '%+.0f °C' % self.parent.state[T]
 
+	TS_freeze_button_Background = IconWidget(UI, x-35, y-70, icon = 'button_snowflake_24_white.png')
+	TS_freeze_button_Background.active_area_type = 'rectangle'
+	TS_freeze_button_Background.active_area_rectangle = [-15, 15, -15, 15]
+	@TS_freeze_button_Background.activate
+	def foo(self):
+		if self.parent.state[TS] == -200:
+			self.parent.send(f'@pypl.{TS}.stop()\r')
+		else:
+			self.parent.send(f'@pypl.{TS}.start(-200)\r')
+	TS_freeze_button_Color = IconWidget(UI, x-35, y-70, icon = 'button_snowflake_24_cyan.png')
+	@TS_freeze_button_Color.refresh
+	def foo(self):
+		if self.parent.state[TS] is None or self.parent.state[TS] > -100:
+			self.sprite.opacity = 0
+		else:
+			self.sprite.opacity = 255 if self.parent.state[cPWM] else 127
+
+	TS_thaw_button_Background = IconWidget(UI, x, y-70, icon = 'button_snowflake_16_white.png')
+	TS_thaw_button_Background.active_area_type = 'rectangle'
+	TS_thaw_button_Background.active_area_rectangle = [-15, 15, -15, 15]
+	@TS_thaw_button_Background.activate
+	def foo(self):
+		if self.parent.state[TS] == -80:
+			self.parent.send(f'@pypl.{TS}.stop()\r')
+		else:
+			self.parent.send(f'@pypl.{TS}.start(-80)\r')
+	TS_thaw_button_Color = IconWidget(UI, x, y-70, icon = 'button_snowflake_16_magenta.png')
+	@TS_thaw_button_Color.refresh
+	def foo(self):
+		if self.parent.state[TS] is None or self.parent.state[TS] < -100 or self.parent.state[TS] > 0:
+			self.sprite.opacity = 0
+		else:
+			self.sprite.opacity = 255 if self.parent.state[cPWM] else 127
+
+	TS_bake_button_Background = IconWidget(UI, x+35, y-70, icon = 'button_hot_24_white.png')
+	TS_bake_button_Background.active_area_type = 'rectangle'
+	TS_bake_button_Background.active_area_rectangle = [-15, 15, -15, 15]
+	@TS_bake_button_Background.activate
+	def foo(self):
+		if self.parent.state[TS] == 50:
+			self.parent.send(f'@pypl.{TS}.stop()\r')
+		else:
+			self.parent.send(f'@pypl.{TS}.start(50)\r')
+		
+	TS_bake_button_Color = IconWidget(UI, x+35, y-70, icon = 'button_hot_24_orange.png')
+	@TS_bake_button_Color.refresh
+	def foo(self):
+		if self.parent.state[TS] is None or self.parent.state[TS] < 20:
+			self.sprite.opacity = 0
+		else:
+			self.sprite.opacity = 255 if self.parent.state[hPWM] else 127
+
+
+	TS_Text = TextWidget(UI, x, y-100, font_name = 'Helvetica', font_size = 10, color = (0,0,0,255))
+	@TS_Text.refresh
+	def foo(self):
+		self.label.text = '' if self.parent.state[TS] is None else 'Target: %+g °C' % self.parent.state[TS]
+
+	TextWidget(UI, x-25, y+25, font_name = 'Helvetica', font_size = 18, color = (0,0,0,51), label = label, bold = True)
+
 def Gauge(UI, name, P, x, y):
 	P_Background = IconWidget(UI,x, y, icon = 'gauge_white.png')
 	P_Color = IconWidget(UI, x, y, icon = 'gauge_yellow.png')
 	@P_Color.refresh
 	def foo(self):
-		self.parent.state[P] = 0.02733
-		self.sprite.opacity = int((min(3, max(-5, log10(self.parent.state[P])))+5)/8*255)
+		if self.parent.state[P] > 0:
+# 			self.parent.state[P] = 0.02733
+			self.sprite.opacity = int((min(3, max(-5, log10(self.parent.state[P])))+5)/8*255)
+		else:
+			self.sprite.opacity = 0
 
 	P_Text = TextWidget(UI, x, y, font_name = 'Helvetica', font_size = 14, color = (0,0,0,255))
 	@P_Text.refresh
 	def foo(self):
-		x = self.parent.state[P]
-		y = int(floor(log10(x)))
-		if y > -2:
-			n = 3-y
-			self.label.text = f'{x:.{n}f}\nmbar'
-# 			self.label.text = f'{x:g}\nmbar'
+		if self.parent.state[P] > 0:
+			x = self.parent.state[P]
+			y = int(floor(log10(x)))
+			if y > -2:
+				n = 3-y
+				self.label.text = f'{x:.{n}f}\nmbar'
+	# 			self.label.text = f'{x:g}\nmbar'
+			else:
+				self.label.text = f'{x:.5f}\nmbar'
+	# 			z = x / 10**y
+	# 			n = min(y + 5, 3)
+	# 			self.label.text = f'{z:.{n}f} e{y}\nmbar'
 		else:
-			self.label.text = f'{x:.5f}\nmbar'
-# 			z = x / 10**y
-# 			n = min(y + 5, 3)
-# 			self.label.text = f'{z:.{n}f} e{y}\nmbar'
+				self.label.text = ''
 
 if __name__ == '__main__':
 	
 	UI = PyPL_GUI()
 
-	TS1_freeze_button_Background = IconWidget(UI,-35, 130, icon = 'button_snowflake_24_white.png')
-	TS1_freeze_button_Background.active_area_type = 'rectangle'
-	TS1_freeze_button_Background.active_area_rectangle = [-15, 15, -15, 15]
-	@TS1_freeze_button_Background.activate
-	def foo(self):
-		if self.parent.state['TS1'] == -200:
-			self.parent.send(f'stop;thermostat_1\r')
-		else:
-			self.parent.send('start_thermostat;thermostat_1;-200\r')
-	TS1_freeze_button_Color = IconWidget(UI, -35, 130, icon = 'button_snowflake_24_cyan.png')
-	@TS1_freeze_button_Color.refresh
-	def foo(self):
-		if self.parent.state['TS1'] is None or self.parent.state['TS1'] > -100:
-			self.sprite.opacity = 0
-		else:
-			self.sprite.opacity = 255 if self.parent.state['cPWM1'] else 127
-
-	TS1_thaw_button_Background = IconWidget(UI,0, 130, icon = 'button_snowflake_16_white.png')
-	TS1_thaw_button_Background.active_area_type = 'rectangle'
-	TS1_thaw_button_Background.active_area_rectangle = [-15, 15, -15, 15]
-	@TS1_thaw_button_Background.activate
-	def foo(self):
-		if self.parent.state['TS1'] == -80:
-			self.parent.send(f'stop;thermostat_1\r')
-		else:
-			self.parent.send('start_thermostat;thermostat_1;-80\r')
-	TS1_thaw_button_Color = IconWidget(UI, 0, 130, icon = 'button_snowflake_16_magenta.png')
-	@TS1_thaw_button_Color.refresh
-	def foo(self):
-		if self.parent.state['TS1'] is None or self.parent.state['TS1'] < -100 or self.parent.state['TS1'] > 0:
-			self.sprite.opacity = 0
-		else:
-			self.sprite.opacity = 255 if self.parent.state['cPWM1'] else 127
-
-	TS1_bake_button_Background = IconWidget(UI,35, 130, icon = 'button_hot_24_white.png')
-	TS1_bake_button_Background.active_area_type = 'rectangle'
-	TS1_bake_button_Background.active_area_rectangle = [-15, 15, -15, 15]
-	@TS1_bake_button_Background.activate
-	def foo(self):
-		if self.parent.state['TS1'] == 50:
-			self.parent.send(f'stop;thermostat_1\r')
-		else:
-			self.parent.send('start_thermostat;thermostat_1;50\r')
-		
-	TS1_bake_button_Color = IconWidget(UI, 35, 130, icon = 'button_hot_24_orange.png')
-	@TS1_bake_button_Color.refresh
-	def foo(self):
-		if self.parent.state['TS1'] is None or self.parent.state['TS1'] < 20:
-			self.sprite.opacity = 0
-		else:
-			self.sprite.opacity = 255 if self.parent.state['hPWM1'] else 127
-
-
-	TS1_Text = TextWidget(UI, 0, 100, font_name = 'Helvetica', font_size = 10, color = (0,0,0,255))
-	@TS1_Text.refresh
-	def foo(self):
-		self.label.text = '' if self.parent.state['TS1'] is None else 'Target: %+g °C' % self.parent.state['TS1']
-
 	gauges = {name: Gauge(UI, name, P, x, y) for name, P, x, y in [
-		('Gauge_1', 'P1', -270, -30),
+		('Gauge_A', 'P1', GAUGE_A_X, GAUGE_A_Y),
+		('Gauge_B', 'P2', GAUGE_B_X, GAUGE_B_Y),
 		]}
 
-	traps = {name: Trap(UI, name, T, x, y, Tlimits = [22, 24, 26, 28, 30, 40]) for name, T, x, y in [
-		('Trap_A', 'T3', -400, -100),
-		('Trap_B', 'T1', 0, 200),
+	traps = {name: Trap(UI, name, TS, x, y, Tlimits = [22, 24, 26, 28, 30, 40], shape = shape) for name, TS, x, y, shape in [
+		('Trap_A', '1', TRAP_A_X, TRAP_A_Y, 'L'),
+		('Trap_B', '2', TRAP_B_X, TRAP_B_Y, 'L'),
+		('Trap_C', '3', TRAP_C_X, TRAP_C_Y, 'I'),
 		]}
 
-	valves = {v: Valve(UI, v, x, y) for v, x, y in [
-		('V1', -450, 200),
-		('V2', -350, 200),
-		('V3', -400, 250),
-		('V4', -200, -100),
+	valves = {v: Valve(UI, v, x, y, label_pos = label_pos) for v, x, y, label_pos in [
+		('V1', INLET_CROSS_X-50, INLET_CROSS_Y, -90),
+		('V2', INLET_CROSS_X+50, INLET_CROSS_Y, -90),
+		('V3', INLET_CROSS_X, INLET_CROSS_Y+50, 135),
+		('V4', TRAP_A_X+150, TRAP_A_Y, -135),
+		('V5', TRAP_B_X, TRAP_A_Y+50, 0),
+		('V6', TRAP_B_X, TRAP_A_Y-50, -45),
+		('V7', TRAP_C_X-50, TRAP_B_Y, -135),
+		('V8', TRAP_C_X, TRAP_B_Y+50, 0),
 		]}
+
+# 	DEBUG = TextWidget(UI, 0, 0, font_name = 'Helvetica', font_size = 64, color = (0,0,0,204), label = '')
+# 	@DEBUG.refresh
+# 	def foo(self):
+# 		self.label.text = self.parent.state['NOW']
 
 # 	Icon_Widget(UI, -300, -80, 'P1', x_min = -5, x_max = 3, angle_min = -45, angle_max = 45, scale = 'log', icon = 'needle_line.png')
 # 
