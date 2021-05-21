@@ -59,11 +59,10 @@ class PyPL():
 		self.status_cycle = status_cycle
 		self.task_blink = None
 		self.rtc = pyb.RTC()
-		self.accel = pyb.Accel()
-		self.SOS = 'OK'
+# 		self.accel = pyb.Accel()
 
 
-		self.stepper = Stepper()
+		self.stepper = Stepper(dir_pin = 'B4') # use B4 because X12 is fried on my development pyboard
 
 
 		self.P1 = DummySensor()
@@ -212,6 +211,7 @@ class PyPL():
 	
 	def set_rtc(self, t):
 		self.rtc.datetime(t) # t must be a tuple of ints: (year, month, day, weekday, hours, minutes, seconds, subseconds)
+
 	def send_status(self):
 		self.send(
 			'status'
@@ -256,8 +256,7 @@ class PyPL():
 # 			+ self.sep2 + 'stop_blink_dialog=b%s' % self.stop_blink_dialog
 # 			+ self.sep2 + 'confirm_stop_blink_dialog=b%s' % self.confirm_stop_blink_dialog
 # 			+ self.sep2 + 'undo_stop_blink_dialog=b%s' % self.undo_stop_blink_dialog
-# 			+ self.sep2 + 'DEBUG=s%s' % repr(self.rbuf)
-# 			+ self.sep2 + 'SOS=s%s' % self.SOS
+# 			+ self.sep2 + 'DEBUG=s%s %s' % (repr(self.stepper.position), repr(self.stepper.target))
 			)
 
 	async def status_loop(self):

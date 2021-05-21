@@ -2,12 +2,18 @@
 
 from matplotlib.patches import *
 from pylab import *
+from numpy import random as nprandom
+
+
 
 DPI = 100
-VACUUM_X = 0
-VACUUM_Y = 300
-INLET_CROSS_X = -400
-INLET_CROSS_Y = 200
+
+INLET_CROSS_X = -150
+INLET_CROSS_Y = 250
+VACUUM_X = INLET_CROSS_X + 350
+VACUUM_Y = INLET_CROSS_Y + 100
+REACTOR_X = INLET_CROSS_X - 120
+REACTOR_Y = -180
 TRAP_A_X = INLET_CROSS_X
 TRAP_A_Y = 0
 GAUGE_A_X = TRAP_A_X + 100
@@ -44,7 +50,7 @@ rcParams['grid.alpha'] = .15
 rcParams['savefig.dpi'] = DPI
 
 def bg_img(
-	figsize = (12, 8),
+	figsize = (8, 8),
 	):
 	
 	fig = figure(figsize = figsize)
@@ -58,7 +64,8 @@ def bg_img(
 		)
 
 	X, Y = zip(*[
-		(INLET_CROSS_X-100, INLET_CROSS_Y),
+		(REACTOR_X, REACTOR_Y),
+		(REACTOR_X, INLET_CROSS_Y),
 		(INLET_CROSS_X+100, INLET_CROSS_Y),
 		])
 	plot(X, Y, **tube_kwargs)
@@ -392,25 +399,124 @@ def button(
 		text(0 + symbol_dx, 0 + symbol_dy, '❄︎'[:-1], family = 'Menlo', size = symbol_size, ha = 'center', va = 'center')
 	elif symbol == 'hot':
 		text(0 + symbol_dx, 0 + symbol_dy, '≈', family = 'Menlo', size = symbol_size, ha = 'center', va = 'center', rotation = 90)
+	elif symbol in ['ufwd', 'fwd', 'ubwd', 'bwd']:
+		l = symbol_size/300
+		ax.add_patch(
+			Polygon(
+				xy = [(l*cos(a)*(1 if symbol in ['fwd', 'ufwd'] else -1) + symbol_dx, l*sin(a) + symbol_dy) for a in [0, 2*pi/3, -2*pi/3]],
+				closed = True,
+				ec = symbol_color,
+				fc = symbol_color,
+				lw = symbol_lw,
+				)
+			)
+		if symbol in ['bwd', 'fwd']:
+			plot([(l*1.2+symbol_dx) if symbol == 'fwd' else (-l*1.2+symbol_dx)]*2, [-l+symbol_dy, l-symbol_dy], '-', color = symbol_color, lw = symbol_lw)
 	axis([-(w+1)/2, (w+1)/2, -(h+1)/2, (h+1)/2])
 	xticks([])
 	yticks([])
 	savefig(f'img/{name}.png', dpi = DPI, facecolor = 'None')
 	close(fig)
 
+def acidbath(
+	radius = .5,
+	lw = 3,
+	hs_color = 'w',
+	acid_color = (.75,1,.75,1),
+	bubble_fc = (1,1,1,2/3),
+	n_bubbles = 16,
+	min_bubble_radius = .05,
+	max_bubble_radius = .15,
+	seed = 16,
+	bubble_dx = +0.,
+	bubble_dy = -0.,
+	bubble_lw = 1,
+	):
+
+	## clockwise from the top:
+	circle = array([ [sin(a/360*2*pi), cos(a/360*2*pi)] for a in arange(361)])
+	
+	#draw box:
+	xy1 = vstack((
+			array([[1, .5]]),
+			circle[90:271] - array([[0, .5]]),
+			array([[-1, .5]]),
+			))*radius
+
+	xy2 = vstack((
+			circle[270:] + array([[0, .5]]),
+			circle[:91] + array([[0, .5]]),
+			))*radius
+
+	fig = figure(figsize = (2*radius + .2, 3*radius + .2))
+	ax = axes((0, 0, 1, 1), frameon = False)
+	plot([-radius, radius], [radius/2, radius/2], 'k-', lw = bubble_lw, solid_capstyle = 'butt')
+	ax.add_patch(
+		Polygon(
+			xy = xy2,
+			closed = False,
+			ec = 'k',
+			fc = 'w',
+			lw = lw,
+			)
+		)
+	ax.add_patch(
+		Polygon(
+			xy = xy1,
+			closed = False,
+			ec = 'k',
+			fc = acid_color,
+			lw = lw,
+			)
+		)
+	
+	rng = nprandom.default_rng(seed)
+	for k in range(n_bubbles):
+		r = rng.uniform(min_bubble_radius*radius, max_bubble_radius*radius)
+		x = rng.uniform(-radius*0.9, radius*0.9)+bubble_dx
+		y = rng.uniform(-radius*0.9, radius*0.9)+bubble_dy
+
+		ax.add_artist(
+			Ellipse(
+				xy = (x,y-x/10),
+				width = 2*r,
+				height = 2*r,
+				ec = 'k',
+				fc = bubble_fc,
+				lw = bubble_lw,
+				zorder = 100,
+				)
+			)
+		
+	axis([-(radius+.1), (radius+.1), -(1.5*radius+.1), (1.5*radius+.1)])
+	xticks([])
+	yticks([])
+	savefig(f'img/acid_{seed:03.0f}.png', dpi = DPI, facecolor = 'None')
+	close(fig)
+	
+
 if __name__ == '__main__':
 
+# 	for k in range(1000):
+# 		acidbath(seed = k)
+
+	acidbath(seed = 130, bubble_dy  = -0.11)
+	
 	bg_img()
 	
-	for symbol, symbol_size, symbol_dx, symbol_dy, fc, color in [
-		('hot', 24, 0.01, 0.016, (1,.75,0,1), 'orange'),
-		('hot', 24, 0.01, 0.016, (1,1,1,1), 'white'),
-		('snowflake', 24, 0, -0.021, (0,1,1,1), 'cyan'),
-		('snowflake', 24, 0, -0.021, (1,1,1,1), 'white'),
-		('snowflake', 16, 0, -0.018, (.9,.75,1,1), 'magenta'),
-		('snowflake', 16, 0, -0.018, (1,1,1,1), 'white'),
+	for symbol, symbol_size, symbol_dx, symbol_dy, fc, color, symbol_color in [
+		('hot', 24, 0.01, 0.016, (1,.75,0,1), 'orange', 'k'),
+		('hot', 24, 0.01, 0.016, (1,1,1,1), 'white', 'k'),
+		('snowflake', 24, 0, -0.021, (0,1,1,1), 'cyan', 'k'),
+		('snowflake', 24, 0, -0.021, (1,1,1,1), 'white', 'k'),
+		('snowflake', 16, 0, -0.018, (.9,.75,1,1), 'magenta', 'k'),
+		('snowflake', 16, 0, -0.018, (1,1,1,1), 'white', 'k'),
+		('ubwd', 12, 0.01, 0., (1,1,1,1), 'white', (2/3,2/3,2/3,1)),
+		('ufwd', 12, 0, 0., (1,1,1,1), 'white', (2/3,2/3,2/3,1)),
+		('fwd', 20, -0.01, 0., (1,1,1,1), 'white', 'k'),
+		('bwd', 20, 0.02, 0., (1,1,1,1), 'white', 'k'),
 		]:
-		button(fc = fc, symbol = symbol, symbol_dx = symbol_dx, symbol_dy = symbol_dy, symbol_size = symbol_size, name = f'button_{symbol}_{symbol_size}_{color}')
+		button(fc = fc, symbol = symbol, symbol_dx = symbol_dx, symbol_dy = symbol_dy, symbol_size = symbol_size, name = f'button_{symbol}_{symbol_size}_{color}', symbol_color = symbol_color)
 
 	for fc, name in [
 			('w', 'white'),

@@ -18,7 +18,10 @@ from build_gui_elements import (
 	GAUGE_B_X, GAUGE_B_Y,
 	TRAP_C_X, TRAP_C_Y,
 	VACUUM_X, VACUUM_Y,
+	REACTOR_X, REACTOR_Y,
 	)
+
+DEBUG = False
 
 class DummyBoard():
 	def __init__(self):
@@ -164,6 +167,7 @@ class PyPL_GUI():
 
 
 	def send(self, txt):
+		print(txt[:-1])
 		self.board.write(txt.encode())
 
 	def set_rtc(self):
@@ -715,6 +719,8 @@ def Gauge(UI, name, P, x, y):
 	P_Color = IconWidget(UI, x, y, icon = 'gauge_yellow.png')
 	@P_Color.refresh
 	def foo(self):
+		if self.parent.state[P] is None:
+			return None
 		if self.parent.state[P] > 0:
 # 			self.parent.state[P] = 0.02733
 			self.sprite.opacity = int((min(3, max(-5, log10(self.parent.state[P])))+5)/8*255)
@@ -724,6 +730,8 @@ def Gauge(UI, name, P, x, y):
 	P_Text = TextWidget(UI, x, y, font_name = 'Helvetica', font_size = 14, color = (0,0,0,255))
 	@P_Text.refresh
 	def foo(self):
+		if self.parent.state[P] is None:
+			return None
 		if self.parent.state[P] > 0:
 			x = self.parent.state[P]
 			y = int(floor(log10(x)))
@@ -765,10 +773,48 @@ if __name__ == '__main__':
 		('V8', TRAP_C_X, TRAP_B_Y+50, 0),
 		]}
 
-# 	DEBUG = TextWidget(UI, 0, 0, font_name = 'Helvetica', font_size = 64, color = (0,0,0,204), label = '')
-# 	@DEBUG.refresh
-# 	def foo(self):
-# 		self.label.text = self.parent.state['NOW']
+	reactor_cmd = {
+		'bwd': IconWidget(UI, REACTOR_X-20, REACTOR_Y-140, icon = 'button_bwd_20_white.png'),
+		'ubwd': IconWidget(UI, REACTOR_X-20, REACTOR_Y-100, icon = 'button_ubwd_12_white.png'),
+		'ufwd': IconWidget(UI, REACTOR_X+20, REACTOR_Y-100, icon = 'button_ufwd_12_white.png'),
+		'fwd': IconWidget(UI, REACTOR_X+20, REACTOR_Y-140, icon = 'button_fwd_20_white.png'),
+		}	
+
+	n = reactor_cmd['bwd']
+	n.active_area_type = 'rectangle'
+	n.active_area_rectangle = [-15, 15, -15, 15]
+	@n.activate
+	def foo(self):
+		self.parent.send(f'@pypl.stepper.bwd()\r')
+
+	n = reactor_cmd['ubwd']
+	n.active_area_type = 'rectangle'
+	n.active_area_rectangle = [-15, 15, -15, 15]
+	@n.activate
+	def foo(self):
+		self.parent.send(f'@pypl.stepper.microbwd()\r')
+
+	n = reactor_cmd['ufwd']
+	n.active_area_type = 'rectangle'
+	n.active_area_rectangle = [-15, 15, -15, 15]
+	@n.activate
+	def foo(self):
+		self.parent.send(f'@pypl.stepper.microfwd()\r')
+
+	n = reactor_cmd['fwd']
+	n.active_area_type = 'rectangle'
+	n.active_area_rectangle = [-15, 15, -15, 15]
+	@n.activate
+	def foo(self):
+		self.parent.send(f'@pypl.stepper.fwd()\r')
+
+	IconWidget(UI, REACTOR_X, REACTOR_Y, icon = 'acid_130.png')
+
+	if DEBUG:
+		debug = TextWidget(UI, -500, 350, font_name = 'Helvetica', font_size = 12, color = (255,0,0,255), label = '')
+		@debug.refresh
+		def foo(self):
+			self.label.text = self.parent.state['DEBUG']
 
 # 	Icon_Widget(UI, -300, -80, 'P1', x_min = -5, x_max = 3, angle_min = -45, angle_max = 45, scale = 'log', icon = 'needle_line.png')
 # 
