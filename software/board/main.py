@@ -272,7 +272,7 @@ class PyPL():
 
 			# print debug info
 			if self.DEBUG and self.clock == 0:
-				print([self.rbuf], self.instructions)
+				self.echo('Stepper position: %.0f' % self.stepper.position)
 
 			# read instructions from serial
 			while self.serial.any():
@@ -373,7 +373,7 @@ if __name__ == '__main__':
 
 	pyb.LED(2).on()
 	try:
-		pypl = PyPL()	
+		pypl = PyPL(DEBUG = True)	
 		pyb.LED(2).off()
 		pypl.start()
 	except Exception as e:

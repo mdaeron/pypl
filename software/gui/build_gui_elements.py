@@ -497,9 +497,9 @@ def acidbath(
 
 if __name__ == '__main__':
 
-# 	for k in range(1000):
+# 	for k in range(30):
 # 		acidbath(seed = k)
-
+	
 	acidbath(seed = 130, bubble_dy  = -0.11)
 	
 	bg_img()

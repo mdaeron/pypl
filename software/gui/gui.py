@@ -177,6 +177,7 @@ class PyPL_GUI():
 	def start(self):
 		self.set_rtc()
 		pyglet.clock.schedule_interval(self.bg_log, 1)
+		pyglet.clock.schedule_interval(self.relay, 2)
 		pyglet.clock.schedule_interval(self.read, 0.05)
 		pyglet.app.run()
 
@@ -188,6 +189,16 @@ class PyPL_GUI():
 		pyglet.clock.unschedule(self.other_log)
 		self.current_other_log = None
 
+	def relay(self, dt, filename = '.board_input'):
+		try:
+			with open(filename, 'r') as f:
+				for l in f.readlines():
+					if len(l) and l[0] == '@' and l[-1] == '\n':
+						self.send(l[:-1]+'\r')
+		except FileNotFoundError:
+			pass
+		with open(filename, 'w') as f:
+			f.write('')
 
 
 
