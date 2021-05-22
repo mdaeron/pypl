@@ -127,8 +127,10 @@ class PyPL():
 
 
 		self.spi = pyb.SPI(2, mode = pyb.SPI.MASTER, baudrate = 10**7, phase = 1)
-		self.T1 = MAX31856(self.spi, pyb.Pin('X17', pyb.Pin.OUT))
-		self.T3 = MAX31856(self.spi, pyb.Pin('X6', pyb.Pin.OUT))
+		self.T1 = MAX31856(self.spi, pyb.Pin('X5', pyb.Pin.OUT))
+		self.T2 = MAX31856(self.spi, pyb.Pin('X6', pyb.Pin.OUT))
+		self.T3 = MAX31856(self.spi, pyb.Pin('X17', pyb.Pin.OUT))
+		self.T4 = MAX31856(self.spi, pyb.Pin('X18', pyb.Pin.OUT))
 
 		self.hPWM_1 = _PWM('Y3')
 		self.cPWM_1 = _PWM('Y4')
@@ -373,7 +375,7 @@ if __name__ == '__main__':
 
 	pyb.LED(2).on()
 	try:
-		pypl = PyPL(DEBUG = True)	
+		pypl = PyPL(DEBUG = False)	
 		pyb.LED(2).off()
 		pypl.start()
 	except Exception as e:

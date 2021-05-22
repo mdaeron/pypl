@@ -8,10 +8,8 @@ from numpy import random as nprandom
 
 DPI = 100
 
-INLET_CROSS_X = -150
+INLET_CROSS_X = -225
 INLET_CROSS_Y = 250
-VACUUM_X = INLET_CROSS_X + 350
-VACUUM_Y = INLET_CROSS_Y + 100
 REACTOR_X = INLET_CROSS_X - 120
 REACTOR_Y = -180
 TRAP_A_X = INLET_CROSS_X
@@ -26,6 +24,14 @@ GAUGE_B_X = (TRAP_B_X + TRAP_C_X)//2
 GAUGE_B_Y = TRAP_B_Y + 100
 CRDS_X = TRAP_C_X
 CRDS_Y = TRAP_C_Y + 300
+VACUUM_X = CRDS_X
+VACUUM_Y = INLET_CROSS_Y + 100
+TURBO_X = VACUUM_X - 90
+TURBO_Y = VACUUM_Y - 180
+SCROLL_X = VACUUM_X + 90
+SCROLL_Y = VACUUM_Y - 180
+GAUGE_C_X = VACUUM_X
+GAUGE_C_Y = VACUUM_Y - 50
 
 from matplotlib import rcParams
 
@@ -50,7 +56,7 @@ rcParams['grid.alpha'] = .15
 rcParams['savefig.dpi'] = DPI
 
 def bg_img(
-	figsize = (8, 8),
+	figsize = (9, 8),
 	):
 	
 	fig = figure(figsize = figsize)
@@ -71,7 +77,10 @@ def bg_img(
 	plot(X, Y, **tube_kwargs)
 
 	X, Y = zip(*[
-		(VACUUM_X, VACUUM_Y),
+		(TURBO_X, VACUUM_Y),
+		(TURBO_X, TURBO_Y),
+		(SCROLL_X, SCROLL_Y),
+		(SCROLL_X, VACUUM_Y),
 		(INLET_CROSS_X, VACUUM_Y),
 		(TRAP_A_X, TRAP_A_Y),
 		(TRAP_B_X, TRAP_A_Y),
@@ -81,6 +90,12 @@ def bg_img(
 	X, Y = zip(*[
 		(GAUGE_A_X, TRAP_A_Y),
 		(GAUGE_A_X, GAUGE_A_Y),
+		])
+	plot(X, Y, **tube_kwargs)
+
+	X, Y = zip(*[
+		(GAUGE_C_X, VACUUM_Y),
+		(GAUGE_C_X, GAUGE_C_Y),
 		])
 	plot(X, Y, **tube_kwargs)
 
@@ -494,8 +509,60 @@ def acidbath(
 	savefig(f'img/acid_{seed:03.0f}.png', dpi = DPI, facecolor = 'None')
 	close(fig)
 	
+def command(
+	name = 'command',
+	fw = 2,
+	fh = 1,
+	fc = (1,1,1,1),
+	ec = (0,0,0,1),
+	lw = 2,
+	label = '',
+	size = 14,
+	tc = (0,0,0,1),
+	weight = 'bold',
+	dx = 0,
+	dy = 0,
+	):
+	fig = figure(figsize = (fw, fh))
+	ax = axes((0, 0, 1, 1), frameon = False)
+
+	w, h = .8/2*fw, .3/2*fh
+	x = [-w, w, w, -w, -w]
+	y = [h, h, -h, -h, h]
+	xy = array([x, y]).T
+	ax.add_artist(
+		Polygon(xy,
+			ec = 'none',
+			fc = fc,
+			)
+		)
+	plot(x, y, '-', color = ec, lw = lw, solid_capstyle = 'round', solid_joinstyle = 'round')
+	text(dx, dy, label, va = 'center', ha = 'center', size = size, color = tc, weight = weight)
+	axis([-fw/2, fw/2, -fh/2, fh/2])
+	xticks([])
+	yticks([])
+	savefig(f'img/command_{name}.png', dpi = DPI, facecolor = 'None')
+	close(fig)
+
 
 if __name__ == '__main__':
+
+	for name, fc, ec, label, tc, dx, dy in [
+		('standby', (.5,.5,.5,1), (.25,.25,.25,1), 'STANDBY', (1,1,1,1), 0, -.025),
+		('transfer', (.5,.75,1,1), (.1,.15,.2,1), 'TRANSFER', None, 0, -.025),
+		('carbonate', (.25,1,.25,1), (0,.25,0,1), 'RUN CARB', None, 0, -.025),
+		('CO2', (.25,1,.25,1), (0,.25,0,1), 'RUN CO2', None, 0, -.025),
+		('stop', (2/3,0,0,1), (.25,0,0,1), 'STOP', (1,1,1,1), 0, -.025),
+		]:
+		command(
+			name = name,
+			fc = fc,
+			ec = ec,
+			label = label,
+			tc = ec if tc is None else tc,
+			dx = dx,
+			dy = dy,
+			)
 
 # 	for k in range(30):
 # 		acidbath(seed = k)
@@ -526,6 +593,7 @@ if __name__ == '__main__':
 			((.9,.75,1,1), 'magenta'),
 			((1,.9,.4,1), 'yellow'),
 			((.25,1,0,1), 'green'),
+			((1,0,0,1), 'red'),
 			]:
 		thermostat(fc = fc, name = f'thermostat_{name}')
 		gauge(fc = fc, name = f'gauge_{name}')

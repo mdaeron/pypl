@@ -16,9 +16,12 @@ from build_gui_elements import (
 	GAUGE_A_X, GAUGE_A_Y,
 	TRAP_B_X, TRAP_B_Y,
 	GAUGE_B_X, GAUGE_B_Y,
+	GAUGE_C_X, GAUGE_C_Y,
 	TRAP_C_X, TRAP_C_Y,
 	VACUUM_X, VACUUM_Y,
 	REACTOR_X, REACTOR_Y,
+	TURBO_X, TURBO_Y,
+	SCROLL_X, SCROLL_Y,
 	)
 
 DEBUG = False
@@ -765,6 +768,7 @@ if __name__ == '__main__':
 	gauges = {name: Gauge(UI, name, P, x, y) for name, P, x, y in [
 		('Gauge_A', 'P1', GAUGE_A_X, GAUGE_A_Y),
 		('Gauge_B', 'P2', GAUGE_B_X, GAUGE_B_Y),
+		('Gauge_C', 'P3', GAUGE_C_X, GAUGE_C_Y),
 		]}
 
 	traps = {name: Trap(UI, name, TS, x, y, Tlimits = [22, 24, 26, 28, 30, 40], shape = shape) for name, TS, x, y, shape in [
@@ -782,6 +786,9 @@ if __name__ == '__main__':
 		('V6', TRAP_B_X, TRAP_A_Y-50, -45),
 		('V7', TRAP_C_X-50, TRAP_B_Y, -135),
 		('V8', TRAP_C_X, TRAP_B_Y+50, 0),
+		('V9', (TURBO_X + SCROLL_X)/2, SCROLL_Y, 90),
+		('V10', TURBO_X, (TURBO_Y + VACUUM_Y)//2, 135),
+		('V11', SCROLL_X, (SCROLL_Y + VACUUM_Y)//2, 45),
 		]}
 
 	reactor_cmd = {
@@ -821,6 +828,71 @@ if __name__ == '__main__':
 
 	IconWidget(UI, REACTOR_X, REACTOR_Y, icon = 'acid_130.png')
 
+	turbo_bg = IconWidget(UI, TURBO_X, TURBO_Y, icon = 'pump_white.png')
+	turbo_bg.active_area_type = 'circle'
+	turbo_bg.active_area_radius = 50
+	@turbo_bg.activate
+	def turbo_bg_activate(self):
+		self.parent.send(f'@pypl.V9.open()\r')
+		self.parent.send(f'@pypl.V10.open()\r')
+		self.parent.send(f'@pypl.V11.close()\r')
+
+	turbo_ok = IconWidget(UI, TURBO_X, TURBO_Y, icon = 'pump_green.png')
+	@turbo_ok.refresh
+	def turbo_ok_refresh(self):
+		if self.parent.state['V10'] and self.parent.state['V9'] and not self.parent.state['V11']:
+			self.sprite.opacity = 255
+		else:
+			self.sprite.opacity = 0
+
+	turbo_pb = IconWidget(UI, TURBO_X, TURBO_Y, icon = 'pump_red.png')
+	@turbo_pb.refresh
+	def turbo_ok_refresh(self):
+		if (
+			(self.parent.state['V10'] and not self.parent.state['V9'])
+			or
+			(self.parent.state['V10'] and self.parent.state['V11'])
+			):
+			self.sprite.opacity = 255
+		else:
+			self.sprite.opacity = 0
+	
+
+	
+
+	scroll_bg = IconWidget(UI, SCROLL_X, SCROLL_Y, icon = 'pump_white.png')
+	scroll_bg.active_area_type = 'circle'
+	scroll_bg.active_area_radius = 50
+	@scroll_bg.activate
+	def scroll_bg_activate(self):
+		self.parent.send(f'@pypl.V9.close()\r')
+		self.parent.send(f'@pypl.V10.close()\r')
+		self.parent.send(f'@pypl.V11.open()\r')
+
+	scroll_ok = IconWidget(UI, SCROLL_X, SCROLL_Y, icon = 'pump_yellow.png')
+	@scroll_ok.refresh
+	def scroll_ok_refresh(self):
+		if self.parent.state['V11'] and not self.parent.state['V10']:
+			self.sprite.opacity = 255
+		else:
+			self.sprite.opacity = 0
+
+	scroll_pb = IconWidget(UI, SCROLL_X, SCROLL_Y, icon = 'pump_red.png')
+	@scroll_pb.refresh
+	def scroll_ok_refresh(self):
+		if self.parent.state['V10'] and self.parent.state['V11']:
+			self.sprite.opacity = 255
+		else:
+			self.sprite.opacity = 0
+
+	TextWidget(UI, TURBO_X, TURBO_Y, font_name = 'Helvetica', font_size = 12, color = (0,0,0,255), label = 'Turbo\nPump', bold = True)
+	TextWidget(UI, SCROLL_X, SCROLL_Y, font_name = 'Helvetica', font_size = 12, color = (0,0,0,255), label = 'Scroll\nPump', bold = True)
+
+	Tacid = TextWidget(UI, REACTOR_X, REACTOR_Y+55, font_name = 'Helvetica', font_size = 12, color = (0,0,0,255), label = '', bold = True)
+	@Tacid.refresh
+	def Tacid_refresh(self):
+		self.label.text = '%.0f °C' % self.parent.state['T4']
+	
 	if DEBUG:
 		debug = TextWidget(UI, -500, 350, font_name = 'Helvetica', font_size = 12, color = (255,0,0,255), label = '')
 		@debug.refresh
