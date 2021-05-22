@@ -93,9 +93,9 @@ class PyPL():
 		self.V16 = Valve(DummySensor())
 
 		self.P1 = MKSGauge(6)
-# 		self.P2 = MKSGauge(4)
-# 		self.P3 = MKSGauge(1)
-# 		self.P4 = MKSGauge(2)
+		self.P2 = MKSGauge(4)
+		self.P3 = MKSGauge(1)
+		self.P4 = MKSGauge(2)
 
 		try:
 			self.i2c = machine.I2C(2)
@@ -339,6 +339,27 @@ class PyPL():
 			f.write('')
 		uasyncio.create_task(self.status_loop())
 		uasyncio.run(self.loop())
+
+	def standby(self):
+		self.V1.close()
+		self.V2.close()
+		self.V3.open()
+		self.V4.open()
+		self.V5.open()
+		self.V6.open()
+		self.V7.open()
+		self.V8.close()
+		self.V9.open()
+		self.V10.open()
+		self.V11.close()
+		self.V12.close()
+# 		self.V13.close()
+# 		self.V14.close()
+# 		self.V15.close()
+# 		self.V16.close()
+		self.TS1.start(50)
+		self.TS2.start(50)
+		self.TS3.start(50)
 
 	async def blink(self):
 		try:

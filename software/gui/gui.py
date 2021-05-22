@@ -734,6 +734,7 @@ def Gauge(UI, name, P, x, y):
 	@P_Color.refresh
 	def foo(self):
 		if self.parent.state[P] is None:
+# 			self.parent.state[P] = 0.02733
 			return None
 		if self.parent.state[P] > 0:
 # 			self.parent.state[P] = 0.02733
@@ -885,13 +886,21 @@ if __name__ == '__main__':
 		else:
 			self.sprite.opacity = 0
 
-	TextWidget(UI, TURBO_X, TURBO_Y, font_name = 'Helvetica', font_size = 12, color = (0,0,0,255), label = 'Turbo\nPump', bold = True)
-	TextWidget(UI, SCROLL_X, SCROLL_Y, font_name = 'Helvetica', font_size = 12, color = (0,0,0,255), label = 'Scroll\nPump', bold = True)
+	TextWidget(UI, TURBO_X, TURBO_Y, font_name = 'Helvetica', font_size = 14, color = (0,0,0,255), label = 'turbo\npump', bold = True)
+	TextWidget(UI, SCROLL_X, SCROLL_Y, font_name = 'Helvetica', font_size = 14, color = (0,0,0,255), label = 'scroll\npump', bold = True)
 
 	Tacid = TextWidget(UI, REACTOR_X, REACTOR_Y+55, font_name = 'Helvetica', font_size = 12, color = (0,0,0,255), label = '', bold = True)
 	@Tacid.refresh
 	def Tacid_refresh(self):
 		self.label.text = '%.0f °C' % self.parent.state['T4']
+
+	standby_cmd = IconWidget(UI, 350, -360, icon = 'command_standby.png')
+	standby_cmd.active_area_type = 'rectangle'
+	standby_cmd.active_area_rectangle = (-75, 75, -50, 50)
+	@standby_cmd.activate
+	def standby_cmd_activate(self):
+		self.parent.send(f'@pypl.standby()\r')
+
 	
 	if DEBUG:
 		debug = TextWidget(UI, -500, 350, font_name = 'Helvetica', font_size = 12, color = (255,0,0,255), label = '')
