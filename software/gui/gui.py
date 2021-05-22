@@ -71,7 +71,8 @@ class PyPL_GUI():
 			self.window.clear()
 			self.bg_img.blit(0, 0)
 			for w in self.population:
-				w.draw()
+				if w.visible:
+					w.draw()
 
 		@self.window.event
 		def on_mouse_release(x, y, button, modifiers):
@@ -210,6 +211,7 @@ class Widget():
 	def __init__(self):
 		self.visible = True
 		self._refresh = lambda x: None
+		self._activate = lambda x: None
 
 	def in_active_area(self, x, y):
 		if self.visible and 'active_area_type' in dir(self):
@@ -762,6 +764,52 @@ def Gauge(UI, name, P, x, y):
 		else:
 				self.label.text = ''
 
+
+def CancellableCommand(UI, x, y, name):
+
+	cmd = IconWidget(UI, x, y, icon = f'command_{name}.png')
+	cmd.active_area_type = 'rectangle'
+	cmd.active_area_rectangle = (-75, 75, -15, 15)
+	@cmd.activate
+	def cmd_activate(self):
+		self.parent.send(f'@pypl.run_{name}()\r')
+		self.visible = False
+		stop_cmd.visible = True
+
+	stop_cmd = IconWidget(UI, x, y, icon = 'command_stop.png')
+	stop_cmd.visible = False
+	stop_cmd.active_area_type = 'rectangle'
+	stop_cmd.active_area_rectangle = (-75, 75, -15, 15)
+	@stop_cmd.activate
+	def stop_cmd_activate(self):
+# 		self.visible = False
+		confirm_stop.visible = True
+		cancel_stop.visible = True
+
+	confirm_stop = IconWidget(UI, 0, -50, icon = 'button_abort.png')
+	confirm_stop.sprite.opacity = 230
+	confirm_stop.visible = False
+	confirm_stop.active_area_type = 'rectangle'
+	confirm_stop.active_area_rectangle = (-150, 150, -50, 50)
+	@confirm_stop.activate
+	def confirm_stop_activate(self):
+		self.parent.send(f'@pypl.task_{name}.cancel()\r')
+		self.visible = False
+		stop_cmd.visible = False
+		cmd.visible = True
+		cancel_stop.visible = False
+
+	cancel_stop = IconWidget(UI, 0, 50, icon = 'button_undo.png')
+	cancel_stop.sprite.opacity = 230
+	cancel_stop.visible = False
+	cancel_stop.active_area_type = 'rectangle'
+	cancel_stop.active_area_rectangle = (-150, 150, -50, 50)
+	@cancel_stop.activate
+	def cancel_stop_activate(self):
+		self.visible = False
+		confirm_stop.visible = False
+
+
 if __name__ == '__main__':
 	
 	UI = PyPL_GUI()
@@ -894,13 +942,23 @@ if __name__ == '__main__':
 	def Tacid_refresh(self):
 		self.label.text = '%.0f °C' % self.parent.state['T4']
 
-	standby_cmd = IconWidget(UI, 350, -360, icon = 'command_standby.png')
+	Y = -150
+
+	standby_cmd = IconWidget(UI, 350, Y, icon = 'command_standby.png')
 	standby_cmd.active_area_type = 'rectangle'
 	standby_cmd.active_area_rectangle = (-75, 75, -50, 50)
 	@standby_cmd.activate
 	def standby_cmd_activate(self):
 		self.parent.send(f'@pypl.standby()\r')
 
+	Y += 40
+	CancellableCommand(UI, 350, Y, 'carb')
+
+	Y += 40
+	CancellableCommand(UI, 350, Y, 'CO2')
+
+	Y += 40
+	CancellableCommand(UI, 350, Y, 'transfer')
 	
 	if DEBUG:
 		debug = TextWidget(UI, -500, 350, font_name = 'Helvetica', font_size = 12, color = (255,0,0,255), label = '')
