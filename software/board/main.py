@@ -352,7 +352,7 @@ class PyPL():
 		self.V9.open()
 		self.V10.open()
 		self.V11.close()
-		self.V12.close()
+		self.V12.open()
 # 		self.V13.close()
 # 		self.V14.close()
 # 		self.V15.close()

@@ -8,10 +8,12 @@ from numpy import random as nprandom
 
 DPI = 100
 
-INLET_CROSS_X = -225
-INLET_CROSS_Y = 250
-REACTOR_X = INLET_CROSS_X - 120
-REACTOR_Y = -180
+INLET_CROSS_X = -200
+INLET_CROSS_Y = 200
+REACTOR_X = INLET_CROSS_X - 100
+REACTOR_Y = -200
+ACID_PUMP_X = REACTOR_X - 100
+ACID_PUMP_Y = INLET_CROSS_Y - 100
 TRAP_A_X = INLET_CROSS_X
 TRAP_A_Y = 0
 GAUGE_A_X = TRAP_A_X + 100
@@ -22,16 +24,18 @@ TRAP_C_X = TRAP_B_X + 200
 TRAP_C_Y = TRAP_B_Y - 100
 GAUGE_B_X = (TRAP_B_X + TRAP_C_X)//2
 GAUGE_B_Y = TRAP_B_Y + 100
-CRDS_X = TRAP_C_X
+CRDS_X = TRAP_C_X + 200
 CRDS_Y = TRAP_C_Y + 300
-VACUUM_X = CRDS_X
-VACUUM_Y = INLET_CROSS_Y + 100
+VACUUM_X = TRAP_C_X
+VACUUM_Y = INLET_CROSS_Y + 150
 TURBO_X = VACUUM_X - 90
 TURBO_Y = VACUUM_Y - 180
 SCROLL_X = VACUUM_X + 90
 SCROLL_Y = VACUUM_Y - 180
 GAUGE_C_X = VACUUM_X
 GAUGE_C_Y = VACUUM_Y - 50
+ACID_GAUGE_X = ACID_PUMP_X
+ACID_GAUGE_Y = INLET_CROSS_Y + 100
 
 from matplotlib import rcParams
 
@@ -56,7 +60,7 @@ rcParams['grid.alpha'] = .15
 rcParams['savefig.dpi'] = DPI
 
 def bg_img(
-	figsize = (9, 8),
+	figsize = (10, 8),
 	):
 	
 	fig = figure(figsize = figsize)
@@ -70,9 +74,20 @@ def bg_img(
 		)
 
 	X, Y = zip(*[
+		(ACID_PUMP_X, ACID_PUMP_Y),
+		(ACID_GAUGE_X, ACID_GAUGE_Y),
+		])
+	plot(X, Y, **tube_kwargs)
+
+	X, Y = zip(*[
+		(ACID_GAUGE_X, INLET_CROSS_Y),
+		(INLET_CROSS_X+100, INLET_CROSS_Y),
+		])
+	plot(X, Y, **tube_kwargs)
+
+	X, Y = zip(*[
 		(REACTOR_X, REACTOR_Y),
 		(REACTOR_X, INLET_CROSS_Y),
-		(INLET_CROSS_X+100, INLET_CROSS_Y),
 		])
 	plot(X, Y, **tube_kwargs)
 
@@ -121,6 +136,7 @@ def bg_img(
 	X, Y = zip(*[
 		(TRAP_C_X, TRAP_B_Y+77),
 		(TRAP_C_X, CRDS_Y),
+		(CRDS_X, CRDS_Y),
 		])
 	tube_kwargs['lw'] = 2
 	plot(X, Y, **tube_kwargs)
@@ -151,8 +167,8 @@ def bg_img(
 	for k,a in enumerate(linspace(0,pi,13)[:-1]):
 		l = 20 if k%2 else 30
 		plot(
-			[CRDS_X - l*sin(a), CRDS_X + l*sin(a)],
-			[CRDS_Y - l*cos(a), CRDS_Y + (l if a else l*1.5)*cos(a)],
+			[CRDS_X - l*cos(a), CRDS_X + (l if a else l*1.5)*cos(a)],
+			[CRDS_Y - l*sin(a), CRDS_Y + l*sin(a)],
 			**crds_kwargs
 			)
 
@@ -427,6 +443,9 @@ def button(
 			)
 		if symbol in ['bwd', 'fwd']:
 			plot([(l*1.2+symbol_dx) if symbol == 'fwd' else (-l*1.2+symbol_dx)]*2, [-l+symbol_dy, l-symbol_dy], '-', color = symbol_color, lw = symbol_lw)
+	else:
+		text(0 + symbol_dx, 0 + symbol_dy, symbol, family = 'Helvetica', size = symbol_size, ha = 'center', va = 'center', color = symbol_color, weight = 'bold')
+
 	axis([-(w+1)/2, (w+1)/2, -(h+1)/2, (h+1)/2])
 	xticks([])
 	yticks([])
@@ -511,8 +530,8 @@ def acidbath(
 	
 def command(
 	name = 'command',
-	fw = 2,
-	fh = 1,
+	w = 0.75,
+	h = 0.15,
 	fc = (1,1,1,1),
 	ec = (0,0,0,1),
 	lw = 2,
@@ -523,10 +542,9 @@ def command(
 	dx = 0,
 	dy = 0,
 	):
-	fig = figure(figsize = (fw, fh))
+	fig = figure(figsize = (w+1, h+1))
 	ax = axes((0, 0, 1, 1), frameon = False)
 
-	w, h = .8/2*fw, .3/2*fh
 	x = [-w, w, w, -w, -w]
 	y = [h, h, -h, -h, h]
 	xy = array([x, y]).T
@@ -538,7 +556,7 @@ def command(
 		)
 	plot(x, y, '-', color = ec, lw = lw, solid_capstyle = 'round', solid_joinstyle = 'round')
 	text(dx, dy, label, va = 'center', ha = 'center', size = size, color = tc, weight = weight)
-	axis([-fw/2, fw/2, -fh/2, fh/2])
+	axis([-(w+1)/2, (w+1)/2, -(h+1)/2, (h+1)/2])
 	xticks([])
 	yticks([])
 	savefig(f'img/command_{name}.png', dpi = DPI, facecolor = 'None')
@@ -546,6 +564,12 @@ def command(
 
 
 if __name__ == '__main__':
+
+	for symbol, w, h, symbol_size, symbol_dx, symbol_dy, fc, ec, name, symbol_color in [
+		('STOP, FOR REAL', 6.8, 1, 36, 0., -0.05, (1,0,0,1), (.75,0,0,1), 'stop_for_real', 'w'),
+		('NO, NEVER MIND', 6.8, 1, 36, 0., -0.05, (.75,.75,.75,1), (.5,.5,.5,1), 'no_never_mind', (.5,.5,.5)),
+		]:
+		button(w = w, h = h, fc = fc, ec = ec, symbol = symbol, symbol_dx = symbol_dx, symbol_dy = symbol_dy, symbol_size = symbol_size, name = f'command_{name}', symbol_color = symbol_color)
 
 	for name, fc, ec, label, tc, dx, dy in [
 		('standby', (.5,.5,.5,1), (.25,.25,.25,1), 'STANDBY', (1,1,1,1), 0, -.025),

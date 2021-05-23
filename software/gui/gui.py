@@ -12,6 +12,7 @@ pyglet.resource.reindex()
 
 from build_gui_elements import (
 	INLET_CROSS_X, INLET_CROSS_Y,
+	ACID_PUMP_X, ACID_PUMP_Y,
 	TRAP_A_X, TRAP_A_Y,
 	GAUGE_A_X, GAUGE_A_Y,
 	TRAP_B_X, TRAP_B_Y,
@@ -22,6 +23,7 @@ from build_gui_elements import (
 	REACTOR_X, REACTOR_Y,
 	TURBO_X, TURBO_Y,
 	SCROLL_X, SCROLL_Y,
+	ACID_GAUGE_X, ACID_GAUGE_Y,
 	)
 
 DEBUG = False
@@ -786,11 +788,11 @@ def CancellableCommand(UI, x, y, name):
 		confirm_stop.visible = True
 		cancel_stop.visible = True
 
-	confirm_stop = IconWidget(UI, 0, -50, icon = 'button_abort.png')
-	confirm_stop.sprite.opacity = 230
+	confirm_stop = IconWidget(UI, 0, -60, icon = 'command_stop_for_real.png')
+# 	confirm_stop.sprite.opacity = 230
 	confirm_stop.visible = False
 	confirm_stop.active_area_type = 'rectangle'
-	confirm_stop.active_area_rectangle = (-150, 150, -50, 50)
+	confirm_stop.active_area_rectangle = (-250, 250, -50, 50)
 	@confirm_stop.activate
 	def confirm_stop_activate(self):
 		self.parent.send(f'@pypl.task_{name}.cancel()\r')
@@ -799,11 +801,11 @@ def CancellableCommand(UI, x, y, name):
 		cmd.visible = True
 		cancel_stop.visible = False
 
-	cancel_stop = IconWidget(UI, 0, 50, icon = 'button_undo.png')
-	cancel_stop.sprite.opacity = 230
+	cancel_stop = IconWidget(UI, 0, 60, icon = 'command_no_never_mind.png')
+# 	cancel_stop.sprite.opacity = 230
 	cancel_stop.visible = False
 	cancel_stop.active_area_type = 'rectangle'
-	cancel_stop.active_area_rectangle = (-150, 150, -50, 50)
+	cancel_stop.active_area_rectangle = (-250, 250, -50, 50)
 	@cancel_stop.activate
 	def cancel_stop_activate(self):
 		self.visible = False
@@ -818,9 +820,12 @@ if __name__ == '__main__':
 		('Gauge_A', 'P1', GAUGE_A_X, GAUGE_A_Y),
 		('Gauge_B', 'P2', GAUGE_B_X, GAUGE_B_Y),
 		('Gauge_C', 'P3', GAUGE_C_X, GAUGE_C_Y),
+		('Gauge_D', 'P4', ACID_GAUGE_X, ACID_GAUGE_Y),
 		]}
 
-	traps = {name: Trap(UI, name, TS, x, y, Tlimits = [22, 24, 26, 28, 30, 40], shape = shape) for name, TS, x, y, shape in [
+	traps = {name: Trap(UI, name, TS, x, y,
+# 		Tlimits = [22, 24, 26, 28, 30, 40],
+		shape = shape) for name, TS, x, y, shape in [
 		('Trap_A', '1', TRAP_A_X, TRAP_A_Y, 'L'),
 		('Trap_B', '2', TRAP_B_X, TRAP_B_Y, 'L'),
 		('Trap_C', '3', TRAP_C_X, TRAP_C_Y, 'I'),
@@ -828,7 +833,7 @@ if __name__ == '__main__':
 
 	valves = {v: Valve(UI, v, x, y, label_pos = label_pos) for v, x, y, label_pos in [
 		('V1', INLET_CROSS_X-50, INLET_CROSS_Y, -90),
-		('V2', INLET_CROSS_X+50, INLET_CROSS_Y, -90),
+		('V2', INLET_CROSS_X+50, INLET_CROSS_Y, 45),
 		('V3', INLET_CROSS_X, INLET_CROSS_Y+50, 135),
 		('V4', TRAP_A_X+150, TRAP_A_Y, -135),
 		('V5', TRAP_B_X, TRAP_A_Y+50, 0),
@@ -838,6 +843,7 @@ if __name__ == '__main__':
 		('V9', (TURBO_X + SCROLL_X)/2, SCROLL_Y, 90),
 		('V10', TURBO_X, (TURBO_Y + VACUUM_Y)//2, 135),
 		('V11', SCROLL_X, (SCROLL_Y + VACUUM_Y)//2, 45),
+		('V12', (ACID_PUMP_X + REACTOR_X)//2, INLET_CROSS_Y, 90),
 		]}
 
 	reactor_cmd = {
@@ -934,6 +940,10 @@ if __name__ == '__main__':
 		else:
 			self.sprite.opacity = 0
 
+
+	acid_pump_bg = IconWidget(UI, ACID_PUMP_X, ACID_PUMP_Y, icon = 'pump_white.png')
+
+	TextWidget(UI, ACID_PUMP_X, ACID_PUMP_Y, font_name = 'Helvetica', font_size = 14, color = (0,0,0,255), label = 'acid\npump', bold = True)
 	TextWidget(UI, TURBO_X, TURBO_Y, font_name = 'Helvetica', font_size = 14, color = (0,0,0,255), label = 'turbo\npump', bold = True)
 	TextWidget(UI, SCROLL_X, SCROLL_Y, font_name = 'Helvetica', font_size = 14, color = (0,0,0,255), label = 'scroll\npump', bold = True)
 
@@ -942,9 +952,9 @@ if __name__ == '__main__':
 	def Tacid_refresh(self):
 		self.label.text = '%.0f °C' % self.parent.state['T4']
 
-	Y = -150
+	X, Y = 385, -350
 
-	standby_cmd = IconWidget(UI, 350, Y, icon = 'command_standby.png')
+	standby_cmd = IconWidget(UI, X, Y, icon = 'command_standby.png')
 	standby_cmd.active_area_type = 'rectangle'
 	standby_cmd.active_area_rectangle = (-75, 75, -50, 50)
 	@standby_cmd.activate
@@ -952,13 +962,13 @@ if __name__ == '__main__':
 		self.parent.send(f'@pypl.standby()\r')
 
 	Y += 40
-	CancellableCommand(UI, 350, Y, 'carb')
+	CancellableCommand(UI, X, Y, 'carb')
 
 	Y += 40
-	CancellableCommand(UI, 350, Y, 'CO2')
+	CancellableCommand(UI, X, Y, 'CO2')
 
 	Y += 40
-	CancellableCommand(UI, 350, Y, 'transfer')
+	CancellableCommand(UI, X, Y, 'transfer')
 	
 	if DEBUG:
 		debug = TextWidget(UI, -500, 350, font_name = 'Helvetica', font_size = 12, color = (255,0,0,255), label = '')
