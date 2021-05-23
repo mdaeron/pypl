@@ -357,9 +357,9 @@ class PyPL():
 # 		self.V14.close()
 # 		self.V15.close()
 # 		self.V16.close()
-		self.TS1.start(50)
-		self.TS2.start(50)
-		self.TS3.start(50)
+		self.TS1.start(40)
+		self.TS2.start(40)
+		self.TS3.start(40)
 
 	async def blink(self):
 		try:

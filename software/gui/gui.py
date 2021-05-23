@@ -714,7 +714,7 @@ def Trap(UI, name, i, x, y, Tlimits = [-170, -90, -70, 0, 30, 40], shape = 'L', 
 		if self.parent.state[TS] == 50:
 			self.parent.send(f'@pypl.{TS}.stop()\r')
 		else:
-			self.parent.send(f'@pypl.{TS}.start(50)\r')
+			self.parent.send(f'@pypl.{TS}.start(40)\r')
 		
 	TS_bake_button_Color = IconWidget(UI, x+35, y-70, icon = 'button_hot_24_orange.png')
 	@TS_bake_button_Color.refresh

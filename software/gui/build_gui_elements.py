@@ -25,7 +25,7 @@ TRAP_C_Y = TRAP_B_Y - 100
 GAUGE_B_X = (TRAP_B_X + TRAP_C_X)//2
 GAUGE_B_Y = TRAP_B_Y + 100
 CRDS_X = TRAP_C_X + 200
-CRDS_Y = TRAP_C_Y + 300
+CRDS_Y = TRAP_C_Y + 250
 VACUUM_X = TRAP_C_X
 VACUUM_Y = INLET_CROSS_Y + 150
 TURBO_X = VACUUM_X - 90
@@ -572,10 +572,10 @@ if __name__ == '__main__':
 		button(w = w, h = h, fc = fc, ec = ec, symbol = symbol, symbol_dx = symbol_dx, symbol_dy = symbol_dy, symbol_size = symbol_size, name = f'command_{name}', symbol_color = symbol_color)
 
 	for name, fc, ec, label, tc, dx, dy in [
+		('transfer', (.75,.75,.75,1), (.5,.5,.5,1), 'TRANSFER', (1,1,1,1), 0, -.025),
 		('standby', (.5,.5,.5,1), (.25,.25,.25,1), 'STANDBY', (1,1,1,1), 0, -.025),
-		('transfer', (.5,.75,1,1), (.1,.15,.2,1), 'TRANSFER', None, 0, -.025),
-		('carb', (.25,1,.25,1), (0,.25,0,1), 'RUN CARB', None, 0, -.025),
-		('CO2', (.25,1,.25,1), (0,.25,0,1), 'RUN CO2', None, 0, -.025),
+		('carb', (.9,.6,1,1), (.1,0,.2,1), 'RUN CARB', None, 0, -.025),
+		('CO2', (.8,.9,1,1), (0,0,.5,1), 'RUN CO2', None, 0, -.025),
 		('stop', (2/3,0,0,1), (.25,0,0,1), 'STOP', (1,1,1,1), 0, -.025),
 		]:
 		command(
