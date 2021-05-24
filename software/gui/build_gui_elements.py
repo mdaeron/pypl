@@ -37,6 +37,19 @@ GAUGE_C_Y = VACUUM_Y - 50
 ACID_GAUGE_X = ACID_PUMP_X
 ACID_GAUGE_Y = INLET_CROSS_Y + 100
 
+V1_X, V1_Y = INLET_CROSS_X-50, INLET_CROSS_Y
+V2_X, V2_Y = INLET_CROSS_X+50, INLET_CROSS_Y
+V3_X, V3_Y = INLET_CROSS_X, INLET_CROSS_Y + 50
+V4_X, V4_Y = TRAP_A_X+150, TRAP_A_Y
+V5_X, V5_Y = TRAP_B_X, TRAP_A_Y+50
+V6_X, V6_Y = TRAP_B_X, TRAP_A_Y-50
+V7_X, V7_Y = TRAP_C_X-50, TRAP_B_Y
+V8_X, V8_Y = TRAP_C_X, TRAP_B_Y+50
+V9_X, V9_Y = (TURBO_X + SCROLL_X)/2, SCROLL_Y
+V10_X, V10_Y = TURBO_X, (TURBO_Y + VACUUM_Y)//2
+V11_X, V11_Y = SCROLL_X, (SCROLL_Y + VACUUM_Y)//2
+V12_X, V12_Y = (ACID_PUMP_X + REACTOR_X)//2, INLET_CROSS_Y
+
 from matplotlib import rcParams
 
 rcParams['font.family'] = 'sans-serif'
@@ -63,6 +76,135 @@ def bg_img(
 	figsize = (10, 8),
 	):
 	
+	kw_vaclines = dict(
+		ls = '-',
+		lw = 2,
+		marker = 'None',
+		color = (0,1,0),
+		)
+	
+	w = (SCROLL_X - V3_X)
+	h = (VACUUM_Y - V5_Y)
+	fig = figure(figsize = (w/100 + .1, h/100 + .1))
+	ax = axes((0, 0, 1, 1), frameon = False)
+
+	plot([V3_X, V3_X, SCROLL_X, SCROLL_X], [V3_Y, VACUUM_Y, VACUUM_Y, V11_Y], **kw_vaclines)
+	plot([V5_X, V5_X], [V5_Y, VACUUM_Y], **kw_vaclines)
+	plot([GAUGE_C_X, GAUGE_C_X], [GAUGE_C_Y, VACUUM_Y], **kw_vaclines)
+	plot([V10_X, V10_X], [V10_Y, VACUUM_Y], **kw_vaclines)
+
+	axis([V3_X-5, SCROLL_X+5, V5_Y-5, VACUUM_Y+5])
+	xticks([])
+	yticks([])
+	savefig('img/vacline_top.png', dpi = DPI, facecolor = 'None')
+	close(fig)
+
+
+	w = (V4_X - V1_X)
+	h = (V3_Y - V4_Y)
+	fig = figure(figsize = (w/100 + .1, h/100 + .1))
+	ax = axes((0, 0, 1, 1), frameon = False)
+
+	plot([V3_X, V3_X, V4_X], [V3_Y, V4_Y, V4_Y], **kw_vaclines)
+	plot([V1_X, V2_X], [V1_Y, V2_Y], **kw_vaclines)
+	plot([GAUGE_A_X, GAUGE_A_X], [V4_Y, GAUGE_A_Y], **kw_vaclines)
+
+	axis([V1_X-5, V4_X+5, V4_Y-5, V3_Y+5])
+	xticks([])
+	yticks([])
+	savefig('img/vacline_trapA.png', dpi = DPI, facecolor = 'None')
+	close(fig)
+
+
+	w = (V5_X - V4_X)
+	h = (V5_Y - V6_Y)
+	fig = figure(figsize = (w/100 + .1, h/100 + .1))
+	ax = axes((0, 0, 1, 1), frameon = False)
+
+	plot([V4_X, V5_X], [V4_Y, V4_Y], **kw_vaclines)
+	plot([V5_X, V6_X], [V5_Y, V6_Y], **kw_vaclines)
+
+	axis([V4_X-5, V5_X+5, V6_Y-5, V5_Y+5])
+	xticks([])
+	yticks([])
+	savefig('img/vacline_V456.png', dpi = DPI, facecolor = 'None')
+	close(fig)
+
+
+	w = (V8_X - V7_X)
+	h = (V8_Y - TRAP_C_Y)
+	fig = figure(figsize = (w/100 + .1, h/100 + .1))
+	ax = axes((0, 0, 1, 1), frameon = False)
+
+	plot([V7_X, V8_X], [V7_Y, V7_Y], **kw_vaclines)
+	plot([V8_X, V8_X], [TRAP_C_Y, V8_Y], **kw_vaclines)
+
+	axis([V7_X-5, V8_X+5, TRAP_C_Y-5, V8_Y+5])
+	xticks([])
+	yticks([])
+	savefig('img/vacline_trapC.png', dpi = DPI, facecolor = 'None')
+	close(fig)
+
+
+	w = (V7_X - V6_X)
+	h = (V6_Y - V7_Y)
+	fig = figure(figsize = (w/100 + .1, h/100 + .1))
+	ax = axes((0, 0, 1, 1), frameon = False)
+
+	plot([V6_X, V6_X, V7_X], [V6_Y, V7_Y, V7_Y], **kw_vaclines)
+	plot([GAUGE_B_X, GAUGE_B_X], [V7_Y, GAUGE_B_Y], **kw_vaclines)
+
+	axis([V6_X-5, V7_X+5, V7_Y-5, V6_Y+5])
+	xticks([])
+	yticks([])
+	savefig('img/vacline_trapB.png', dpi = DPI, facecolor = 'None')
+	close(fig)
+
+
+
+
+	w = 0
+	h = (TRAP_B_Y+77 - V8_Y)
+	fig = figure(figsize = (w/100 + .1, h/100 + .1))
+	ax = axes((0, 0, 1, 1), frameon = False)
+
+	plot([TRAP_C_X, TRAP_C_X], [V8_Y, TRAP_B_Y+77], **kw_vaclines)
+
+	axis([TRAP_C_X-5, TRAP_C_X+5, V8_Y-5, TRAP_B_Y+77+5])
+	xticks([])
+	yticks([])
+	savefig('img/vacline_crds.png', dpi = DPI, facecolor = 'None')
+	close(fig)
+
+	w = (V1_X - V12_X)
+	h = (V1_Y - REACTOR_Y)
+	fig = figure(figsize = (w/100 + .1, h/100 + .1))
+	ax = axes((0, 0, 1, 1), frameon = False)
+
+	plot([REACTOR_X, REACTOR_X], [REACTOR_Y, V12_Y], **kw_vaclines)
+	plot([V1_X, V12_X], [V1_Y, V12_Y], **kw_vaclines)
+
+	axis([V12_X-5, V1_X+5, REACTOR_Y-5, V12_Y+5])
+	xticks([])
+	yticks([])
+	savefig('img/vacline_reactor.png', dpi = DPI, facecolor = 'None')
+	close(fig)
+
+	
+	w = (SCROLL_X - TURBO_X)/100
+	h = (VACUUM_Y - TURBO_Y)/200
+	fig = figure(figsize = (w+.1, h+.1))
+	ax = axes((0, 0, 1, 1), frameon = False)
+	plot([-w/2, -w/2, w/2, w/2, ], [h/2, -h/2, -h/2, h/2, ], **kw_vaclines)
+	axis([-(w+.1)/2, (w+.1)/2, -(h+.1)/2, (h+.1)/2])
+	xticks([])
+	yticks([])
+	savefig('img/vacline_pumps.png', dpi = DPI, facecolor = 'None')
+	close(fig)
+	
+
+
+
 	fig = figure(figsize = figsize)
 	ax = axes((0, 0, 1, 1), frameon = False)
 

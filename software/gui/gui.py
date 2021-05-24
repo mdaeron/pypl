@@ -11,6 +11,18 @@ pyglet.resource.path = ['img']
 pyglet.resource.reindex()
 
 from build_gui_elements import (
+	V1_X, V1_Y,
+	V2_X, V2_Y,
+	V3_X, V3_Y,
+	V4_X, V4_Y,
+	V5_X, V5_Y,
+	V6_X, V6_Y,
+	V7_X, V7_Y,
+	V8_X, V8_Y,
+	V9_X, V9_Y,
+	V10_X, V10_Y,
+	V11_X, V11_Y,
+	V12_X, V12_Y,
 	INLET_CROSS_X, INLET_CROSS_Y,
 	ACID_PUMP_X, ACID_PUMP_Y,
 	TRAP_A_X, TRAP_A_Y,
@@ -813,15 +825,8 @@ def CancellableCommand(UI, x, y, name):
 
 
 if __name__ == '__main__':
-	
+		
 	UI = PyPL_GUI()
-
-	gauges = {name: Gauge(UI, name, P, x, y) for name, P, x, y in [
-		('Gauge_A', 'P1', GAUGE_A_X, GAUGE_A_Y),
-		('Gauge_B', 'P2', GAUGE_B_X, GAUGE_B_Y),
-		('Gauge_C', 'P3', GAUGE_C_X, GAUGE_C_Y),
-		('Gauge_D', 'P4', ACID_GAUGE_X, ACID_GAUGE_Y),
-		]}
 
 	traps = {name: Trap(UI, name, TS, x, y,
 # 		Tlimits = [22, 24, 26, 28, 30, 40],
@@ -831,19 +836,100 @@ if __name__ == '__main__':
 		('Trap_C', '3', TRAP_C_X, TRAP_C_Y, 'I'),
 		]}
 
+	pumps_vac = IconWidget(UI, VACUUM_X, (3*TURBO_Y + VACUUM_Y)//4, icon = 'vacline_pumps.png')
+	top_vac = IconWidget(UI, (INLET_CROSS_X + SCROLL_X)//2, (VACUUM_Y + V5_Y)//2, icon = 'vacline_top.png')
+	trapA_vac = IconWidget(UI, (V1_X + V4_X)//2, (V3_Y + V4_Y)//2, icon = 'vacline_trapA.png')
+	V456_vac = IconWidget(UI, (V4_X + V5_X)//2, (V5_Y + V6_Y)//2, icon = 'vacline_V456.png')
+	trapB_vac = IconWidget(UI, (V6_X + V7_X)//2, (V6_Y + V7_Y)//2, icon = 'vacline_trapB.png')
+	trapC_vac = IconWidget(UI, (V7_X + V8_X)//2, (V8_Y + TRAP_C_Y)//2, icon = 'vacline_trapC.png')
+	crds_vac = IconWidget(UI, V8_X, (V8_Y+TRAP_B_Y+77)//2, icon = 'vacline_crds.png')
+	reactor_vac = IconWidget(UI, REACTOR_X, (REACTOR_Y+V12_Y)//2, icon = 'vacline_reactor.png')
+
+	pumped_opacity = 255
+
+	@top_vac.refresh
+	def top_vac_refresh(self):
+		if self.parent.state['V10'] or self.parent.state['V11']:
+			self.sprite.opacity = pumped_opacity
+		else:
+			self.sprite.opacity = 255 - pumped_opacity
+
+	@trapA_vac.refresh
+	def trapA_vac_refresh(self):
+		if (
+			(self.parent.state['V3'] and top_vac.sprite.opacity == pumped_opacity)
+			or (self.parent.state['V4'] and self.parent.state['V5'] and top_vac.sprite.opacity == pumped_opacity)
+			):
+			self.sprite.opacity = pumped_opacity
+		else:
+			self.sprite.opacity = 255 - pumped_opacity
+
+	@V456_vac.refresh
+	def trapA_vac_refresh(self):
+		if (
+			(self.parent.state['V5'] and top_vac.sprite.opacity == pumped_opacity)
+			or (self.parent.state['V4'] and self.parent.state['V3'] and top_vac.sprite.opacity == pumped_opacity)
+			):
+			self.sprite.opacity = pumped_opacity
+		else:
+			self.sprite.opacity = 255 - pumped_opacity
+
+	@trapB_vac.refresh
+	def trapB_vac_refresh(self):
+		if (
+			(self.parent.state['V6'] and V456_vac.sprite.opacity == pumped_opacity)
+			):
+			self.sprite.opacity = pumped_opacity
+		else:
+			self.sprite.opacity = 255 - pumped_opacity
+
+	@trapC_vac.refresh
+	def trapC_vac_refresh(self):
+		if (
+			(self.parent.state['V7'] and trapB_vac.sprite.opacity == pumped_opacity)
+			):
+			self.sprite.opacity = pumped_opacity
+		else:
+			self.sprite.opacity = 255 - pumped_opacity
+
+	@crds_vac.refresh
+	def crds_vac_refresh(self):
+		if (
+			(self.parent.state['V8'] and trapC_vac.sprite.opacity == pumped_opacity)
+			):
+			self.sprite.opacity = pumped_opacity
+		else:
+			self.sprite.opacity = 255 - pumped_opacity
+
+	@reactor_vac.refresh
+	def reactor_vac_refresh(self):
+		if (
+			(self.parent.state['V1'] and trapA_vac.sprite.opacity == pumped_opacity)
+			):
+			self.sprite.opacity = pumped_opacity
+		else:
+			self.sprite.opacity = 255 - pumped_opacity
+
+	gauges = {name: Gauge(UI, name, P, x, y) for name, P, x, y in [
+		('Gauge_A', 'P1', GAUGE_A_X, GAUGE_A_Y),
+		('Gauge_B', 'P2', GAUGE_B_X, GAUGE_B_Y),
+		('Gauge_C', 'P3', GAUGE_C_X, GAUGE_C_Y),
+		('Gauge_D', 'P4', ACID_GAUGE_X, ACID_GAUGE_Y),
+		]}
+
 	valves = {v: Valve(UI, v, x, y, label_pos = label_pos) for v, x, y, label_pos in [
-		('V1', INLET_CROSS_X-50, INLET_CROSS_Y, -90),
-		('V2', INLET_CROSS_X+50, INLET_CROSS_Y, 45),
-		('V3', INLET_CROSS_X, INLET_CROSS_Y+50, 135),
-		('V4', TRAP_A_X+150, TRAP_A_Y, -135),
-		('V5', TRAP_B_X, TRAP_A_Y+50, 0),
-		('V6', TRAP_B_X, TRAP_A_Y-50, -45),
-		('V7', TRAP_C_X-50, TRAP_B_Y, -135),
-		('V8', TRAP_C_X, TRAP_B_Y+50, 0),
-		('V9', (TURBO_X + SCROLL_X)/2, SCROLL_Y, 90),
-		('V10', TURBO_X, (TURBO_Y + VACUUM_Y)//2, 135),
-		('V11', SCROLL_X, (SCROLL_Y + VACUUM_Y)//2, 45),
-		('V12', (ACID_PUMP_X + REACTOR_X)//2, INLET_CROSS_Y, 90),
+		('V1', V1_X, V1_Y, -90),
+		('V2', V2_X, V2_Y, 45),
+		('V3', V3_X, V3_Y, 135),
+		('V4', V4_X, V4_Y, -135),
+		('V5', V5_X, V5_Y, 0),
+		('V6', V6_X, V6_Y, -45),
+		('V7', V7_X, V7_Y, -135),
+		('V8', V8_X, V8_Y, 0),
+		('V9', V9_X, V9_Y, 90),
+		('V10', V10_X, V10_Y, 135),
+		('V11', V11_X, V11_Y, 45),
+		('V12', V12_X, V12_Y, 90),
 		]}
 
 	reactor_cmd = {
