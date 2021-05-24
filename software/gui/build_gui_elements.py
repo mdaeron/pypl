@@ -204,12 +204,30 @@ def bg_img(
 	close(fig)
 
 	
-	w = (SCROLL_X - TURBO_X)/100
-	h = (VACUUM_Y - TURBO_Y)/200
-	fig = figure(figsize = (w+.1, h+.1))
+	w = (V12_X - ACID_PUMP_X)
+	h = (ACID_GAUGE_Y - ACID_PUMP_Y)
+	fig = figure(figsize = (w/100 + .1, h/100 + .1))
 	ax = axes((0, 0, 1, 1), frameon = False)
-	plot([-w/2, -w/2, w/2, w/2, ], [h/2, -h/2, -h/2, h/2, ], **kw_vaclines)
-	axis([-(w+.1)/2, (w+.1)/2, -(h+.1)/2, (h+.1)/2])
+
+	plot([ACID_PUMP_X, ACID_PUMP_X], [ACID_GAUGE_Y, ACID_PUMP_Y], **kw_vaclines)
+	plot([ACID_PUMP_X, V12_X], [V12_Y, V12_Y], **kw_vaclines)
+
+	axis([ACID_PUMP_X-5, V12_X+5, ACID_PUMP_Y-5, ACID_GAUGE_Y+5])
+	xticks([])
+	yticks([])
+	savefig('img/vacline_acidpump.png', dpi = DPI, facecolor = 'None')
+	close(fig)
+
+	
+	w = (SCROLL_X - TURBO_X)
+	h = (V11_Y - TURBO_Y)
+	fig = figure(figsize = (w/100 + .1, h/100 + .1))
+	ax = axes((0, 0, 1, 1), frameon = False)
+	plot([TURBO_X, TURBO_X], [V10_Y, V10_Y-40], **kw_vaclines)
+	plot([TURBO_X+50, SCROLL_X-50], [TURBO_Y, TURBO_Y], **kw_vaclines)
+	plot([SCROLL_X, SCROLL_X], [V11_Y, V11_Y-40], **kw_vaclines)
+
+	axis([TURBO_X-5, SCROLL_X+5, TURBO_Y-5, V11_Y+5])
 	xticks([])
 	yticks([])
 	savefig('img/vacline_pumps.png', dpi = DPI, facecolor = 'None')

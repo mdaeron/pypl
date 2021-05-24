@@ -836,6 +836,67 @@ if __name__ == '__main__':
 		('Trap_C', '3', TRAP_C_X, TRAP_C_Y, 'I'),
 		]}
 
+	turbo_bg = IconWidget(UI, TURBO_X, TURBO_Y, icon = 'pump_white.png')
+	turbo_bg.active_area_type = 'circle'
+	turbo_bg.active_area_radius = 50
+	@turbo_bg.activate
+	def turbo_bg_activate(self):
+		self.parent.send(f'@pypl.V9.open()\r')
+		self.parent.send(f'@pypl.V10.open()\r')
+		self.parent.send(f'@pypl.V11.close()\r')
+
+	turbo_ok = IconWidget(UI, TURBO_X, TURBO_Y, icon = 'pump_green.png')
+	@turbo_ok.refresh
+	def turbo_ok_refresh(self):
+		if self.parent.state['V10'] and self.parent.state['V9'] and not self.parent.state['V11']:
+			self.sprite.opacity = 255
+		else:
+			self.sprite.opacity = 0
+
+	turbo_pb = IconWidget(UI, TURBO_X, TURBO_Y, icon = 'pump_red.png')
+	@turbo_pb.refresh
+	def turbo_ok_refresh(self):
+		if (
+			(self.parent.state['V10'] and not self.parent.state['V9'])
+			or
+			(self.parent.state['V10'] and self.parent.state['V11'])
+			):
+			self.sprite.opacity = 255
+		else:
+			self.sprite.opacity = 0
+	
+
+	
+
+	scroll_bg = IconWidget(UI, SCROLL_X, SCROLL_Y, icon = 'pump_white.png')
+	scroll_bg.active_area_type = 'circle'
+	scroll_bg.active_area_radius = 50
+	@scroll_bg.activate
+	def scroll_bg_activate(self):
+		self.parent.send(f'@pypl.V9.close()\r')
+		self.parent.send(f'@pypl.V10.close()\r')
+		self.parent.send(f'@pypl.V11.open()\r')
+
+	scroll_ok = IconWidget(UI, SCROLL_X, SCROLL_Y, icon = 'pump_yellow.png')
+	@scroll_ok.refresh
+	def scroll_ok_refresh(self):
+		if self.parent.state['V11'] and not self.parent.state['V10']:
+			self.sprite.opacity = 255
+		else:
+			self.sprite.opacity = 0
+
+	scroll_pb = IconWidget(UI, SCROLL_X, SCROLL_Y, icon = 'pump_red.png')
+	@scroll_pb.refresh
+	def scroll_ok_refresh(self):
+		if self.parent.state['V10'] and self.parent.state['V11']:
+			self.sprite.opacity = 255
+		else:
+			self.sprite.opacity = 0
+
+
+	acid_pump_bg = IconWidget(UI, ACID_PUMP_X, ACID_PUMP_Y, icon = 'pump_white.png')
+
+
 	pumps_vac = IconWidget(UI, VACUUM_X, (3*TURBO_Y + VACUUM_Y)//4, icon = 'vacline_pumps.png')
 	top_vac = IconWidget(UI, (INLET_CROSS_X + SCROLL_X)//2, (VACUUM_Y + V5_Y)//2, icon = 'vacline_top.png')
 	trapA_vac = IconWidget(UI, (V1_X + V4_X)//2, (V3_Y + V4_Y)//2, icon = 'vacline_trapA.png')
@@ -845,6 +906,7 @@ if __name__ == '__main__':
 	crds_vac = IconWidget(UI, V8_X, (V8_Y+TRAP_B_Y+77)//2, icon = 'vacline_crds.png')
 	reactor_vac = IconWidget(UI, REACTOR_X, (REACTOR_Y+V12_Y)//2, icon = 'vacline_reactor.png')
 	co2inlet_vac = IconWidget(UI, (INLET_CROSS_X+100+V2_X)//2, V2_Y, icon = 'vacline_co2inlet.png')
+	acidpump_vac = IconWidget(UI, (ACID_PUMP_X + V12_X)//2, (ACID_PUMP_Y + ACID_GAUGE_Y)//2, icon = 'vacline_acidpump.png')
 
 	pumped_opacity = 255
 
@@ -920,6 +982,15 @@ if __name__ == '__main__':
 		else:
 			self.sprite.opacity = 255 - pumped_opacity
 
+	@acidpump_vac.refresh
+	def acidpump_vac_refresh(self):
+		if (
+			(self.parent.state['V12'] and reactor_vac.sprite.opacity == pumped_opacity)
+			):
+			self.sprite.opacity = pumped_opacity
+		else:
+			self.sprite.opacity = 255 - pumped_opacity
+
 	gauges = {name: Gauge(UI, name, P, x, y) for name, P, x, y in [
 		('Gauge_A', 'P1', GAUGE_A_X, GAUGE_A_Y),
 		('Gauge_B', 'P2', GAUGE_B_X, GAUGE_B_Y),
@@ -979,65 +1050,6 @@ if __name__ == '__main__':
 
 	IconWidget(UI, REACTOR_X, REACTOR_Y, icon = 'acid_130.png')
 
-	turbo_bg = IconWidget(UI, TURBO_X, TURBO_Y, icon = 'pump_white.png')
-	turbo_bg.active_area_type = 'circle'
-	turbo_bg.active_area_radius = 50
-	@turbo_bg.activate
-	def turbo_bg_activate(self):
-		self.parent.send(f'@pypl.V9.open()\r')
-		self.parent.send(f'@pypl.V10.open()\r')
-		self.parent.send(f'@pypl.V11.close()\r')
-
-	turbo_ok = IconWidget(UI, TURBO_X, TURBO_Y, icon = 'pump_green.png')
-	@turbo_ok.refresh
-	def turbo_ok_refresh(self):
-		if self.parent.state['V10'] and self.parent.state['V9'] and not self.parent.state['V11']:
-			self.sprite.opacity = 255
-		else:
-			self.sprite.opacity = 0
-
-	turbo_pb = IconWidget(UI, TURBO_X, TURBO_Y, icon = 'pump_red.png')
-	@turbo_pb.refresh
-	def turbo_ok_refresh(self):
-		if (
-			(self.parent.state['V10'] and not self.parent.state['V9'])
-			or
-			(self.parent.state['V10'] and self.parent.state['V11'])
-			):
-			self.sprite.opacity = 255
-		else:
-			self.sprite.opacity = 0
-	
-
-	
-
-	scroll_bg = IconWidget(UI, SCROLL_X, SCROLL_Y, icon = 'pump_white.png')
-	scroll_bg.active_area_type = 'circle'
-	scroll_bg.active_area_radius = 50
-	@scroll_bg.activate
-	def scroll_bg_activate(self):
-		self.parent.send(f'@pypl.V9.close()\r')
-		self.parent.send(f'@pypl.V10.close()\r')
-		self.parent.send(f'@pypl.V11.open()\r')
-
-	scroll_ok = IconWidget(UI, SCROLL_X, SCROLL_Y, icon = 'pump_yellow.png')
-	@scroll_ok.refresh
-	def scroll_ok_refresh(self):
-		if self.parent.state['V11'] and not self.parent.state['V10']:
-			self.sprite.opacity = 255
-		else:
-			self.sprite.opacity = 0
-
-	scroll_pb = IconWidget(UI, SCROLL_X, SCROLL_Y, icon = 'pump_red.png')
-	@scroll_pb.refresh
-	def scroll_ok_refresh(self):
-		if self.parent.state['V10'] and self.parent.state['V11']:
-			self.sprite.opacity = 255
-		else:
-			self.sprite.opacity = 0
-
-
-	acid_pump_bg = IconWidget(UI, ACID_PUMP_X, ACID_PUMP_Y, icon = 'pump_white.png')
 
 	TextWidget(UI, ACID_PUMP_X, ACID_PUMP_Y, font_name = 'Helvetica', font_size = 14, color = (0,0,0,255), label = 'acid\npump', bold = True)
 	TextWidget(UI, TURBO_X, TURBO_Y, font_name = 'Helvetica', font_size = 14, color = (0,0,0,255), label = 'turbo\npump', bold = True)
