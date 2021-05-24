@@ -3,11 +3,11 @@
 An open source, open hardware, automated preparation line for geochemical samples. Originally designed for processing CO<sub>2</sub> samples, but should handle anything which requires:
 
 * switching relays, valves or heating elements
-* monitoring temperature sensors (e.g., PT1000 sensors; type-K thermocouples)
+* monitoring temperature sensors (e.g., [thermocouples](https://en.wikipedia.org/wiki/Thermocouple), [PT1000](https://en.wikipedia.org/wiki/Resistance_thermometer) sensors)
 * monitoring MKS vacuum/pressure gauges.
-* controlling stepper motors
+* controlling [stepper motors](https://en.wikipedia.org/wiki/Stepper_motor)
 
-The user interface runs on a raspberry pi computer. Lower-level ineraction with sensors and various electronic components is handled by a microcontroler (a [pyboard](https://docs.micropython.org/en/latest/pyboard/quickref.html) running [micropython](https://docs.micropython.org/en/latest/index.html)):
+The user interface runs on a raspberry pi computer but this computer may be switched off or unplugged without affecting automated processes, which remain running on an independent microcontroller which handles lower-level interaction with sensors and various electronic components:
 
 <div align="center">
 <img src="pictures/pypl_schematic.png">
@@ -15,17 +15,42 @@ The user interface runs on a raspberry pi computer. Lower-level ineraction with 
 
 ## 1 – Hardware
 ### 1.1 – Motherboard
+
+![motherboard](pictures/motherboard.png)
+
+A custom PCB connects the [pyboard](https://store.micropython.org/product/PYBv1.1) microcontroller running [micropython](https://docs.micropython.org/en/latest/index.html) to the other electronic components, with the following inputs/outputs:
+
+* one fuse-protected 24 VDC input
+* one USB input/output
+* four general-purpose inputs/outputs (GPIO) which may be connected to external peripherals
+* four [D-SUB](https://en.wikipedia.org/wiki/D-subminiature) connectors for [RS-232](https://en.wikipedia.org/wiki/RS-232) connections
+* four screw terminal groups for temperature sensors
+* twenty-two screw terminal groups for 24 VDC relays, of which six can be configured for pulse-width modulation (PWM), thus usable for PID control
+* one bipolar stepper motor driver
+
 ### 1.2 – Pyboard
+
+![pyboard](pictures/pyboard.png)
+
+The brains of the operation is a pyboard (v.1.1, documentation [here](https://docs.micropython.org/en/latest/pyboard/quickref.html)), based on a 168 MHz Cortex M4 CPU.
 
 Note that the maximum total current out of the 3.3V output pins of the pyboard is 250 mA (see [here](https://forum.micropython.org/viewtopic.php?t=9329) for a more complete discussion).
 
-### 1.3 – Stepper Motor Controller Board
+### 1.3 – Stepper Motor Driver Board
+
+![pololu_mp6500](pictures/pololu_mp6500.png)
+
+
+We use a breakout board for the MPS MP6500 microstepping bipolar [stepper motor](https://en.wikipedia.org/wiki/Stepper_motor) driver from Pololu (docs [here](https://www.pololu.com/product/2966)). Rotating the motor is achieved by repeatedly switching the STEP pin between high and low. The motherboard is configured by default for 1/8 step resolution (pins MS1 and MS2 high, i.e. set to +3.3 V), but full steps, half-steps and quarter-steps can be selected using different MS1 and MS2 settings, either by modifying the motherboard or by tinkering with the stepper driver board.
+
+These driver boards work well but are easy to fry when mishandled. Never connect or disconnect motor wires while the driver board is powered.
+
 ### 1.4 – Temperature Readings
 
 Up to 4 independent temperature reading. Each reading may come from either:
 
-* a thermocouple connected to a MAX31856 chip
-* a resistance temperature detector (PT1000 or PT100) connected to a MAX31865 chip
+* a [thermocouple](https://en.wikipedia.org/wiki/Thermocouple) connected to a MAX31856 chip
+* a [resistance temperature detector](https://en.wikipedia.org/wiki/Resistance_thermometer) (PT1000 or PT100) connected to a MAX31865 chip
 
 #### 1.4.1 – Thermocouple Board
 
@@ -54,13 +79,15 @@ Up to 4 independent temperature reading. Each reading may come from either:
 #### 1.4.4 – Resistance Temperature Detectors  (PT1000)
 
 ### 1.5 – Heating Elements
+![heating_element](pictures/heating_element.png)
+
 * Supplier: https://www.prosensor.fr
 * Part #: CCHC-1/4-11/4-300-0 or CCHC-6.5-30-300-0
 * 300 W at 230 VAC
 * OD = 6.35 mm or 6.5 mm
 * L = 31.75 mm or 30 mm
 
-![heating_element](pictures/heating_element.png)
+These relays are powered by 230 VAC and should thus only be switched using dedicated optocoupler relays (see below). 
 
 ### 1.6 – Pressure Readings
 
@@ -68,13 +95,13 @@ Up to 4 independent temperature reading. Each reading may come from either:
 
 * Part #: [MKS 925](https://www.mksinst.com/f/925-micro-pirani-vacuum-transducer)
 * Part #: [MKS 910](https://www.mksinst.com/f/910-micro-pirani-vacuum-transducer)
-* Communicates through an RS232 serial connection
+* Communicates through an [RS-232](https://en.wikipedia.org/wiki/RS-232) serial connection
 
 ![mks_910](pictures/mks_910.png)
 
 #### 1.6.2 – RS232 / TTL Transceiver Board
 
-Converts TTL (Transistor-Transistor Logic) signals to and from RS232 signals
+Converts TTL (Transistor-Transistor Logic) signals to and from [RS-232](https://en.wikipedia.org/wiki/RS-232) signals
 
 * [SparkFun Transceiver Breakout (BOB-11189)](https://www.sparkfun.com/products/11189)
 * Based on MAX3232
@@ -97,8 +124,7 @@ The pyboard communicates through I2C with a GPIO expansion board based on the MC
 
 Used to connect screw terminals to ground safely and quickly. This means that when the MOSFET is off, whatever is connected to the screw terminals will float at a moderately high DC voltage (e.g., 24 VDC) despite being powered off, so any electrical connections should be suitably insulated.
 
-![mosfet](pictures/mosfet.png)
-
+#### 1.7.3 – Optocoupler relays
 
 ### 1.8 – Power Supply
 ### 1.9 – Aluminum Frame
