@@ -844,6 +844,7 @@ if __name__ == '__main__':
 	trapC_vac = IconWidget(UI, (V7_X + V8_X)//2, (V8_Y + TRAP_C_Y)//2, icon = 'vacline_trapC.png')
 	crds_vac = IconWidget(UI, V8_X, (V8_Y+TRAP_B_Y+77)//2, icon = 'vacline_crds.png')
 	reactor_vac = IconWidget(UI, REACTOR_X, (REACTOR_Y+V12_Y)//2, icon = 'vacline_reactor.png')
+	co2inlet_vac = IconWidget(UI, (INLET_CROSS_X+100+V2_X)//2, V2_Y, icon = 'vacline_co2inlet.png')
 
 	pumped_opacity = 255
 
@@ -905,6 +906,15 @@ if __name__ == '__main__':
 	def reactor_vac_refresh(self):
 		if (
 			(self.parent.state['V1'] and trapA_vac.sprite.opacity == pumped_opacity)
+			):
+			self.sprite.opacity = pumped_opacity
+		else:
+			self.sprite.opacity = 255 - pumped_opacity
+
+	@co2inlet_vac.refresh
+	def co2inlet_vac_refresh(self):
+		if (
+			(self.parent.state['V2'] and trapA_vac.sprite.opacity == pumped_opacity)
 			):
 			self.sprite.opacity = pumped_opacity
 		else:

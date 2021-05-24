@@ -190,6 +190,19 @@ def bg_img(
 	savefig('img/vacline_reactor.png', dpi = DPI, facecolor = 'None')
 	close(fig)
 
+	w = (INLET_CROSS_X + 100 - V2_X)
+	h = 0
+	fig = figure(figsize = (w/100 + .1, h/100 + .1))
+	ax = axes((0, 0, 1, 1), frameon = False)
+
+	plot([V2_X, INLET_CROSS_X + 100], [V2_Y, V2_Y], **kw_vaclines)
+
+	axis([V2_X-5, INLET_CROSS_X + 100+5, V2_Y-5, V2_Y+5])
+	xticks([])
+	yticks([])
+	savefig('img/vacline_co2inlet.png', dpi = DPI, facecolor = 'None')
+	close(fig)
+
 	
 	w = (SCROLL_X - TURBO_X)/100
 	h = (VACUUM_Y - TURBO_Y)/200
