@@ -55,7 +55,7 @@ class PyPL_GUI():
 	
 	def __init__(self,
 		bg_img = 'bg_img.png',
-		port = ['/dev/tty.usbmodem*', '/dev/ttyACM*'],
+		port = ['/dev/tty.usbmodem*', '/dev/ttyACM*', 'COM3'],
 		timeout = 0.1,
 		):
 		self.bg_img = pyglet.resource.image(bg_img)
