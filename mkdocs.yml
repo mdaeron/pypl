@@ -1,5 +1,7 @@
 site_name: PyPL Documentation
 
+docs_dir: docpages
+
 theme:
     name: material
     font:
