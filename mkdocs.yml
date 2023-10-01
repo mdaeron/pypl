@@ -1,0 +1,20 @@
+site_name: PyPL Documentation
+
+theme:
+    name: material
+    font:
+        text: Roboto Slab
+        code: Roboto Mono
+    palette:
+        scheme: default
+        primary: indigo
+        accent: pink
+
+plugins:
+    - search
+
+markdown_extensions:
+    - pymdownx.superfences
+
+repo_url: https://github.com/mdaeron/pypl
+repo_name: mdaeron/pypl
